@@ -647,11 +647,5 @@ foreach_seq_loop(N, I, Inc, Fun) ->
     foreach_seq_loop(N-1, I+Inc, Inc, Fun).
 
 load_font(Font) ->
-    case erl_prim_loader:get_file(filename:join([code:priv_dir(eplot),"fonts",Font])) of
-        {ok,FontBinary,_} ->
-            %% archive
-            egd_font:load_binary(FontBinary);
-        _ ->
-            {ok,FontBinary,_} = erl_prim_loader:get_file(filename:join([code:priv_dir(eplot),"eplot/priv/fonts",Font])),
-            egd_font:load_binary(FontBinary)
-    end.
+        ok.
+            
