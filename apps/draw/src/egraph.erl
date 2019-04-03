@@ -81,7 +81,7 @@ color(GraphOpt) ->
 	{egd:color(Color),GraphOpt#opts{numberOfLine = Number + 1}}.
 
 save(Image) ->
-	Count = 9,
+	Count = 10,
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
 	FileName = "wgraph" ++ erlang:integer_to_list(Count) ++ ".png",
 	egd:save(Png, FileName),
@@ -102,7 +102,7 @@ change_position(Data,GraphOpt) ->
 			{Name,
 			lists:map(
 				fun({W,H}) ->
-					{(W * SW) + MW,(H * SH)+ MH}
+					{(W * SW) + MW,mirroring((H * SH),LH)+ MH}
 				end,
 				Points)}
 		end, Data),
@@ -135,7 +135,7 @@ find_acc(Points,Edges) ->
 acc(A,B) ->
 	{MinW,MinH,MaxW,MaxH} = B,
 	NewB = 
-			case A of
+		case A of
 			{W,H} -> acc({W,H,W,H},B);
 			{OMinW,OMinH,OMaxW,OMaxH} -> 
 				{
@@ -161,6 +161,14 @@ max_v(H,Nh) ->
 
 new_value(L,Min,Max) ->
 	trunc(L / (Max - Min)).
+
+mirroring(Y, AY) ->
+	SAxis = trunc(AY/2),
+	case Y < SAxis of 
+		true -> Y - 2 * (Y - SAxis);
+		false -> Y + 2 * (SAxis - Y)
+	end.
+
 
 make_number(Opt) -> ok.
 make_label(Name,Image,Color, GraphOpt) -> ok. %it make from a label that show what line what color
