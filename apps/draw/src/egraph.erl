@@ -1,13 +1,13 @@
 -module(egraph). %sorry for my english
 -export([init/0]).
 
--record(opts, {width,height,numberOfLine,margowidth,margoheight}).
+-record(opts, {width,height,numberOfLine,margowidth,margoheight,date}).
 
 init() -> 
-	L1 = {test1, [{0,1}, {2,2}, {8,7}, {10,13}, {15,40}, {20, 56}, {25, 60}, {30, 100}]},
-	L2 = {test2, [{0,11},{2,21},{5,30},{10,50}, {17, 57}, {23, 71}, {42, 80}, {50,100}]},
-	L3 = {test3, [{0,0}, {20,70},{50,35},{70,100}]},
-	Opt = [{height,300},{width,600}],
+	L1 = {test1, [{0,150}, {100,40}, {150,95}, {200,160}, {300,190}, {350, 270}, {400, 50}, {600, 20}]},
+    L2 = {test2, [{0,200}, {100,60}, {150,190}, {200,10}, {300,90}, {350, 220}, {400, 90}, {600, 20}]},
+    L3 = {test3, [{0,50},  {100,100}, {150,9}, {200,100}, {300,100}, {350, 20}, {400, 150}, {600, 120}]},
+    Opt = [{height,400},{width,800},{date,{firstDay,firstMonth,lastDay,lastMonth}}],
 	graph([L1,L2,L3],Opt).
 
 graph(Data,Opt) -> 
@@ -21,7 +21,8 @@ create_options_record(Opts) ->
 	GraphOpt = #opts{
 	numberOfLine = 0,
 	width = 800,
-	height = 800
+	height = 800,
+	date = false
 	},
 	create_options_record(Opts,GraphOpt).
 create_options_record([],GraphOpt) -> made_margo(GraphOpt);
@@ -29,6 +30,7 @@ create_options_record([{Label, Value} | Opts],GraphOpt) ->
 	NewGraphOpt = case Label of
 		width -> GraphOpt#opts{width = Value};
 		height -> GraphOpt#opts{height = Value};
+		date -> GraphOpt#opts{date = true};
 		_ -> GraphOpt
 	end,
 	create_options_record(Opts,NewGraphOpt).
@@ -36,7 +38,7 @@ create_options_record([{Label, Value} | Opts],GraphOpt) ->
 made_margo(GraphOpt) ->
 	Width = GraphOpt#opts.width,
 	Height = GraphOpt#opts.height,
-	NewGraphOpt = GraphOpt#opts{margowidth = trunc(Width / 10), margoheight = trunc(Height / 10)},
+	NewGraphOpt = GraphOpt#opts{margowidth = trunc(Width / 10), margoheight = 3 * 24},
 	NewGraphOpt.
 
 add_lines([],Image,GraphOpt) -> Image;
@@ -80,7 +82,7 @@ color(GraphOpt) ->
 	{egd:color(Color),GraphOpt#opts{numberOfLine = Number + 1}}.
 
 save(Image) ->
-	Count = 10,
+	Count = 13,
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
 	FileName = "wgraph" ++ erlang:integer_to_list(Count) ++ ".png",
 	egd:save(Png, FileName),
@@ -88,6 +90,19 @@ save(Image) ->
     Png.
 
 % in this part change the Datas positions, if it need
+change_position(Data,GraphOpt = #opts{date = true}) ->
+	NewData 
+		= lists:map(
+			fun({Name,Points}) ->
+				lists:mapfoldl(fun({X,Y},NX) ->
+					{
+					{NX,Y},
+					NX + 50
+					}
+				end, 0, Points)
+			end,
+			Data),
+	change_position(NewData,GraphOpt#opts{date = false});
 change_position(Data,GraphOpt) -> 
 	MW = GraphOpt#opts.margowidth,
 	MH = GraphOpt#opts.margoheight,
@@ -139,25 +154,13 @@ acc(A,B) ->
 			{W,H} -> acc({W,H,W,H},B);
 			{OMinW,OMinH,OMaxW,OMaxH} -> 
 				{
-					min_v(OMinW,MinW),
-					min_v(OMinH,MinH),
-					max_v(OMaxW,MaxW),
-					max_v(OMaxH,MaxH) 
+					erlang:min(OMinW,MinW),
+					erlang:min(OMinH,MinH),
+					erlang:max(OMaxW,MaxW),
+					erlang:max(OMaxH,MaxH) 
 				}
 		end,
 	NewB.
-
-min_v(W,Nw) ->
-	case Nw > W of
-		true -> W;
-		false -> Nw
-	end.
-
-max_v(H,Nh) ->
-	case Nh > H of 
-		true -> Nh;
-		false -> H
-	end.
 
 new_value(L,Min,Max) ->
 	round(L / (Max - Min)).
@@ -169,9 +172,26 @@ mirroring(Y, AY) ->
 		false -> Y + 2 * (SAxis - Y)
 	end.
 
+%it make from a label that show what line what color
+make_label(Name,Image,Color,GraphOpt) -> 
+	Font = load_font("Terminus22.wingsfont"),
+	StringName = erlang:atom_to_list(Name),
+	Y = GraphOpt#opts.height - (GraphOpt#opts.numberOfLine * 22) - 5,
+	P = {15,Y},
+	P0 = {7,Y+12},
+	P1 = {12,Y+17},
+	egd:filledEllipse(Image,P0,P1,Color),
+	egd:text(Image, P, Font, StringName, Color),
+	ok. 
 
-make_number(Opt) -> ok.
-make_label(Name,Image,Color, GraphOpt) -> ok. %it make from a label that show what line what color
-% Size() -> map
+load_font(Font) ->
+    case erl_prim_loader:get_file(filename:join([code:priv_dir(draw),"fonts",Font])) of
+        {ok,FontBinary,_} ->
+            egd_font:load_binary(FontBinary);
+        _ ->
+            {ok,FontBinary,_} = erl_prim_loader:get_file(filename:join([code:priv_dir(draw),"draw/priv/fonts",Font])),
+            egd_font:load_binary(FontBinary)
+    end.
 
 
+make_number(GraphOpt) -> ok.
