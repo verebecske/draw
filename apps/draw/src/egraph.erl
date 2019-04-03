@@ -160,7 +160,7 @@ max_v(H,Nh) ->
 	end.
 
 new_value(L,Min,Max) ->
-	trunc(L / (Max - Min)).
+	round(L / (Max - Min)).
 
 mirroring(Y, AY) ->
 	SAxis = trunc(AY/2),
