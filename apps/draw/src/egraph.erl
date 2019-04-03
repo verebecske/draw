@@ -91,15 +91,16 @@ save(Image) ->
 
 % in this part change the Datas positions, if it need
 change_position(Data,GraphOpt = #opts{date = true}) ->
-	NewData 
-		= lists:map(
+	NewData = lists:map(
 			fun({Name,Points}) ->
-				lists:mapfoldl(fun({X,Y},NX) ->
-					{
-					{NX,Y},
-					NX + 50
-					}
-				end, 0, Points)
+				{_, NewPoints} 
+					= lists:mapfoldl(fun({X,Y},NX) ->
+						{
+						{NX,Y},
+						NX + 50
+						}
+					end, 0, Points),
+			{Name, NewPoints}
 			end,
 			Data),
 	change_position(NewData,GraphOpt#opts{date = false});
