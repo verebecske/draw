@@ -6,7 +6,7 @@
 init() -> 
 	L1 = {test1, [{0,1}, {2,2}, {8,7}, {10,13}, {15,40}, {20, 56}, {25, 60}, {30, 100}]},
 	L2 = {test2, [{0,11},{2,21},{5,30},{10,50}, {17, 57}, {23, 71}, {42, 80}, {50,100}]},
-	L3 = {test3, [{0,5}, {2,13},{5,35},{10,100}]},
+	L3 = {test3, [{0,0}, {20,70},{50,35},{70,100}]},
 	Opt = [{height,300},{width,600}],
 	graph([L1,L2,L3],Opt).
 
@@ -67,7 +67,6 @@ create(GraphOpt) ->
 	make_number(GraphOpt),
 	Image.
 
- %choose color and use an algoritm. I don't no yet what algoritm
 color(GraphOpt) ->  
 %	List = [black, silver, gray, white, maroon, red, purple, fuchia, green, lime, olive, yellow, navy, blue, teal, aqua],
 	Number = GraphOpt#opts.numberOfLine,
@@ -120,6 +119,7 @@ edges(Data) ->
 				{{ Name,  NewAcc},
 				acc(NewEdges, NewAcc)}
 			end, Edges, Data),
+	io:format("Acc : ~p ~n", [Acc]),
 	Acc.
 
 find_acc(Points,Edges) ->
@@ -144,7 +144,7 @@ acc(A,B) ->
 					max_v(OMaxW,MaxW),
 					max_v(OMaxH,MaxH) 
 				}
-	end,
+		end,
 	NewB.
 
 min_v(W,Nw) ->
