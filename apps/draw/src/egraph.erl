@@ -235,4 +235,10 @@ days({BeginDate,EndDate}) ->
 	Dates.
 
 
-
+%make_silver_lines(Image,GraphOps) -> 
+% v = round(maxY / len(maxY)) * len(maxY),
+% lists:mapfoldl(fun({X,Y},L) -> 
+%{ {MW,L+len} , {W-MW, L+len} } end, 0, Points),
+%egd:line().
+	
+	
