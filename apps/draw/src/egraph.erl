@@ -41,7 +41,7 @@ create_options_record([{Label, Value} | Opts],GraphOpt) ->
 	end,
 	create_options_record(Opts,NewGraphOpt).
 
-%I trust you and than you use valid value
+%I trust you and than you use valid values
 add_date(Value, GraphOpt) -> 
 	GraphOpt#opts{date = true, dateValue = Value}.
 
@@ -69,7 +69,7 @@ make_line([P0,P1 | Points], Image, Color) ->
 	egd:line(Image,P0,P1,Color),
 	make_line([P1 | Points], Image, Color).
 
-% in this part create the basic image, the line, the frame 
+% this part creates the basic image and the magic silver lines
 create(GraphOpt) ->
 	Width = GraphOpt#opts.width,
 	Height = GraphOpt#opts.height,
@@ -104,13 +104,13 @@ save(Image) ->
     egd:destroy(Image),
     Png.
 
-% in this part change the Datas positions, if it need 
+%this part changes the data's positions
 change_position(Data,GraphOpt = #opts{date = true}) ->
 	NewData = lists:map(
 			fun({Name,Points}) ->
 				{NewPoints,_} = lists:mapfoldl(
 					fun({X,Y},NX) ->
-						{ {NX,Y}, NX + 45 } %black magic that don't make me happy....
+						{ {NX,Y}, NX + 45 } %black magic that doesn't make me happy....
 					end, 0, Points),
 				{Name, NewPoints}
 			end, Data),
@@ -179,7 +179,7 @@ mirroring(Y, AY) ->
 		false -> Y + 2 * (SAxis - Y)
 	end.
 
-%it make from a label that show what line what color
+%this adds the label to the graph
 make_label(Name,Image,Color,GraphOpt) -> 
 	Font = load_font("Terminus22.wingsfont"),
 	StringName = erlang:atom_to_list(Name),
