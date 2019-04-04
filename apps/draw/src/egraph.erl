@@ -7,7 +7,8 @@ init() ->
 	L1 = {test1, [{0,150}, {100,40}, {150,95}, {200,160}, {300,190}, {350, 270}, {400, 50}, {600, 20}]},
     L2 = {test2, [{0,200}, {100,60}, {150,190}, {200,10}, {300,90}, {350, 220}, {400, 90}, {600, 20}]},
     L3 = {test3, [{0,50},  {100,100}, {150,9}, {200,100}, {300,100}, {350, 20}, {400, 150}, {600, 120}]},
-    Opt = [{height,400},{width,800},{date,{firstDay,firstMonth,lastDay,lastMonth}}],
+    %Opt = [{height,400},{width,800},{date,{firstDay,firstMonth,lastDay,lastMonth}}],
+    Opt = [{height,400},{width,800}],
 	graph([L1,L2,L3],Opt).
 
 graph(Data,Opt) -> 
