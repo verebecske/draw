@@ -1,14 +1,18 @@
 -module(egraph). %sorry for my english
 -export([init/0]).
 
--record(opts, {width,height,numberOfLine,margowidth,margoheight,date}).
+-record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue}).
 
 init() -> 
 	L1 = {test1, [{0,150}, {100,40}, {150,95}, {200,160}, {300,190}, {350, 270}, {400, 50}, {600, 20}]},
     L2 = {test2, [{0,200}, {100,60}, {150,190}, {200,10}, {300,90}, {350, 220}, {400, 90}, {600, 20}]},
     L3 = {test3, [{0,50},  {100,100}, {150,9}, {200,100}, {300,100}, {350, 20}, {400, 150}, {600, 120}]},
-    Opt = [{height,400},{width,800},{date,{firstDay,firstMonth,lastDay,lastMonth}}],
-    %Opt = [{height,400},{width,800}],
+    Opt = [
+		    {height,500},
+		    {width,800},
+		    {date, { {2019,2,4},{2019,2,12} } }
+	    ],
+    % {date, {date(), date()}}
 	graph([L1,L2,L3],Opt).
 
 graph(Data,Opt) -> 
@@ -23,7 +27,8 @@ create_options_record(Opts) ->
 		numberOfLine = 0,
 		width = 800,
 		height = 800,
-		date = false
+		date = false,
+		dateValue = {{2019,2,4},{2019,6,25}}
 	},
 	create_options_record(Opts,GraphOpt).
 create_options_record([],GraphOpt) -> made_margo(GraphOpt);
@@ -31,18 +36,28 @@ create_options_record([{Label, Value} | Opts],GraphOpt) ->
 	NewGraphOpt = case Label of
 		width -> GraphOpt#opts{width = Value};
 		height -> GraphOpt#opts{height = Value};
-		date -> GraphOpt#opts{date = true};
+		date -> add_date(Value,GraphOpt);
 		_ -> GraphOpt
 	end,
 	create_options_record(Opts,NewGraphOpt).
 
+%I trust you and than you use valid value
+add_date(Value, GraphOpt) -> 
+	GraphOpt#opts{date = true, dateValue = Value}.
+
 made_margo(GraphOpt) ->
 	Width = GraphOpt#opts.width,
 	Height = GraphOpt#opts.height,
-	NewGraphOpt = GraphOpt#opts{margowidth = trunc(Width / 10), margoheight = 3 * 24},
+	NewGraphOpt = GraphOpt#opts{margowidth = trunc(Width / 10), margoheight = 3 * 30},
 	NewGraphOpt.
 
-add_lines([],Image,GraphOpt) -> Image;
+add_lines([ {Name, Points} ],Image,GraphOpt) -> 
+	{Color,NewGraphOpt} = color(GraphOpt),
+	make_label(Name, Image, Color, NewGraphOpt),
+	make_line(Points,Image, Color),
+	make_number(Points, Image, NewGraphOpt),
+	Image;
+
 add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
 	{Color,NewGraphOpt} = color(GraphOpt),
 	make_label(Name, Image, Color,NewGraphOpt),
@@ -67,7 +82,6 @@ create(GraphOpt) ->
 	P2 = {Width-MW,Height-MH},
 	egd:line(Image,P0,P1,Color),
 	egd:line(Image,P1,P2,Color),
-	make_number(GraphOpt),
 	Image.
 
 color(GraphOpt) ->  
@@ -83,27 +97,23 @@ color(GraphOpt) ->
 	{egd:color(Color),GraphOpt#opts{numberOfLine = Number + 1}}.
 
 save(Image) ->
-	Count = 13,
+	Count = 15,
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
 	FileName = "wgraph" ++ erlang:integer_to_list(Count) ++ ".png",
 	egd:save(Png, FileName),
     egd:destroy(Image),
     Png.
 
-% in this part change the Datas positions, if it need
+% in this part change the Datas positions, if it need 
 change_position(Data,GraphOpt = #opts{date = true}) ->
 	NewData = lists:map(
 			fun({Name,Points}) ->
-				{NewPoints,_} 
-					= lists:mapfoldl(fun({X,Y},NX) ->
-						{
-						{NX,Y},
-						NX + 50
-						}
+				{NewPoints,_} = lists:mapfoldl(
+					fun({X,Y},NX) ->
+						{ {NX,Y}, NX + 45 } %black magic that don't make me happy....
 					end, 0, Points),
 				{Name, NewPoints}
-			end,
-			Data),
+			end, Data),
 	change_position(NewData,GraphOpt#opts{date = false});
 
 change_position(Data,GraphOpt) -> 
@@ -114,16 +124,13 @@ change_position(Data,GraphOpt) ->
 	{MinW,MinH,MaxW,MaxH} = edges(Data),
 	SW = new_value(LW,MinW,MaxW),
 	SH = new_value(LH,MinH,MaxH),
-	NewData = lists:map(
+	lists:map(
 		fun({Name,Points}) -> 
-			{Name,
-			lists:map(
-				fun({W,H}) ->
-					{(W * SW) + MW,mirroring((H * SH),LH)+ MH}
-				end,
-				Points)}
-		end, Data),
-	NewData.
+			{Name, lists:map(
+					fun({W,H}) ->
+						{(W * SW) + MW,mirroring((H * SH),LH)+ MH}
+					end, Points)}
+		end, Data).
 
 edges(Data) ->
 	MaxW = 0,
@@ -137,7 +144,6 @@ edges(Data) ->
 				{{ Name,  NewAcc},
 				acc(NewEdges, NewAcc)}
 			end, Edges, Data),
-	io:format("Acc : ~p ~n", [Acc]),
 	Acc.
 
 find_acc(Points,Edges) ->
@@ -146,24 +152,22 @@ find_acc(Points,Edges) ->
 	lists:mapfoldl(
 		fun(A,B) ->
 			{A, acc(A,B)}
-		end,
-	{MinW,MinH,MaxW,MaxH},Points),
+		end, {MinW,MinH,MaxW,MaxH},Points),
 	Acc.
 
+%yes, I was sooooo creative
 acc(A,B) ->
 	{MinW,MinH,MaxW,MaxH} = B,
-	NewB = 
-		case A of
-			{W,H} -> acc({W,H,W,H},B);
-			{OMinW,OMinH,OMaxW,OMaxH} -> 
-				{
-					erlang:min(OMinW,MinW),
-					erlang:min(OMinH,MinH),
-					erlang:max(OMaxW,MaxW),
-					erlang:max(OMaxH,MaxH) 
-				}
-		end,
-	NewB.
+	case A of
+		{W,H} -> acc({W,H,W,H},B);
+		{OMinW,OMinH,OMaxW,OMaxH} -> 
+			{
+				erlang:min(OMinW,MinW),
+				erlang:min(OMinH,MinH),
+				erlang:max(OMaxW,MaxW),
+				erlang:max(OMaxH,MaxH) 
+			}
+	end.
 
 new_value(L,Min,Max) ->
 	round(L / (Max - Min)).
@@ -196,5 +200,39 @@ load_font(Font) ->
             egd_font:load_binary(FontBinary)
     end.
 
+make_number(Points, Image, GraphOpt) -> 
+	LabelPoints = lists:map(fun({X,Y}) ->
+		{X - 15, (GraphOpt#opts.height - GraphOpt#opts.margoheight)}
+	end,Points),
+	{BeginDate,EndDate} = GraphOpt#opts.dateValue,
+	Dates = days({BeginDate,EndDate}) ++ [BeginDate],
+	NewLabelPoints = LabelPoints ++ [{GraphOpt#opts.width - 100, 15}],
+	make_day_label(NewLabelPoints,Dates,Image),
+	Image.
 
-make_number(GraphOpt) -> ok.
+make_day_label([WP],[{Y,_,_}],Image) -> 
+	Color = egd:color(silver),
+	StringName = integer_to_list(Y),
+	Font = load_font("Helvetica20.wingsfont"),
+	P = {15,15},
+	egd:text(Image, P, Font, StringName, Color),
+	WColor = egd:color({58,135,189}),
+	WStringName = "Wombat",
+	WFont = load_font("Helvetica20.wingsfont"),
+	egd:text(Image, WP, WFont, WStringName, WColor),
+	Image;
+
+make_day_label([P | LabelPoints],[{Y,M,D} | Dates],Image) ->
+	Color = egd:color(silver),
+	StringName = integer_to_list(D) ++ "/ " ++ integer_to_list(M),
+	Font = load_font("Helvetica20.wingsfont"),
+	egd:text(Image, P, Font, StringName, Color),
+	make_day_label(LabelPoints,Dates,Image).
+
+-spec days({calerdar:date(),calendar:date()}) -> [calendar:date()].
+days({BeginDate,EndDate}) ->
+	Dates = [{2019,1,1},{2019,1,2},{2019,1,3},{2019,1,4},{2019,1,5},{2019,1,6},{2019,1,7},{2019,1,8}],	
+	Dates.
+
+
+
