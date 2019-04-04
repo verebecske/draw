@@ -19,3 +19,6 @@ rebar3.crashdump
 .DS_Store
 vthings.erl
 make_graph.erl
+eplot.erl
+eplot_main.erl
+eplot_view.erl
