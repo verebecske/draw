@@ -1,7 +1,10 @@
 -module(egraph). %sorry for my english
--export([graph/2,days/1,next_day/1]).
+-export([wombat_graph/1,graph/2,days/1,next_day/1]).
 
 -record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue,maxValue}).
+
+wombat_graph(Data) ->
+	graph(Data,[]).
 
 graph(Data,Opt) -> 
 	GraphOpt = create_options_record(Opt),

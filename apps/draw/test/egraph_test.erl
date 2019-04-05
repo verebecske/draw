@@ -2,7 +2,6 @@
 -include_lib("eunit/include/eunit.hrl").
 -export([]).
 
-
 date_maker_test() ->
 	BD = {2019,1,1},
 	ED = {2019,1,8},
