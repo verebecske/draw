@@ -1,7 +1,9 @@
 -module(egraph). %sorry for my english
 -export([init/0]).
 
--record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue}).
+-record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue,maxValue}).
+-define(COUNT, 16).
+
 
 init() -> 
 	L1 = {test1, [{0,150}, {100,40}, {150,95}, {200,160}, {300,190}, {350, 270}, {400, 50}, {600, 20}]},
@@ -18,8 +20,9 @@ init() ->
 graph(Data,Opt) -> 
 	GraphOpt = create_options_record(Opt),
 	Image = create(GraphOpt),
-	NewData = change_position(Data,GraphOpt),
-	NewImage = add_lines(NewData,Image,GraphOpt),
+	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
+	make_silver_lines(Image, NewGraphOpt),
+	add_lines(NewData,Image,NewGraphOpt),
 	save(Image).
 
 create_options_record(Opts) ->
@@ -56,6 +59,7 @@ add_lines([ {Name, Points} ],Image,GraphOpt) ->
 	make_label(Name, Image, Color, NewGraphOpt),
 	make_line(Points,Image, Color),
 	make_number(Points, Image, NewGraphOpt),
+%	make_silver_lines(Image, Points, NewGraphOpt),
 	Image;
 
 add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
@@ -97,9 +101,8 @@ color(GraphOpt) ->
 	{egd:color(Color),GraphOpt#opts{numberOfLine = Number + 1}}.
 
 save(Image) ->
-	Count = 15,
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
-	FileName = "wgraph" ++ erlang:integer_to_list(Count) ++ ".png",
+	FileName = "wgraph" ++ erlang:integer_to_list(?COUNT) ++ ".png",
 	egd:save(Png, FileName),
     egd:destroy(Image),
     Png.
@@ -124,13 +127,14 @@ change_position(Data,GraphOpt) ->
 	{MinW,MinH,MaxW,MaxH} = edges(Data),
 	SW = new_value(LW,MinW,MaxW),
 	SH = new_value(LH,MinH,MaxH),
-	lists:map(
+	NewData = lists:map(
 		fun({Name,Points}) -> 
 			{Name, lists:map(
 					fun({W,H}) ->
 						{(W * SW) + MW,mirroring((H * SH),LH)+ MH}
 					end, Points)}
-		end, Data).
+		end, Data),
+	{NewData,GraphOpt#opts{maxValue = MaxH}}.
 
 edges(Data) ->
 	MaxW = 0,
@@ -234,11 +238,26 @@ days({BeginDate,EndDate}) ->
 	Dates = [{2019,1,1},{2019,1,2},{2019,1,3},{2019,1,4},{2019,1,5},{2019,1,6},{2019,1,7},{2019,1,8}],	
 	Dates.
 
+make_silver_lines(Image,GraphOps) -> 
+	MaxY = GraphOps#opts.maxValue,
+	MW = GraphOps#opts.margowidth,
+	W = GraphOps#opts.width,
+	H = GraphOps#opts.height,
+	MH = GraphOps#opts.margoheight,
+	Color = egd:color({211,211,211,1}),
+	Font = load_font("Helvetica20.wingsfont"),
+	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
+	Estimation = round(MaxY / Len) * Len,
+	P = lists:seq(1,length(integer_to_list(MaxY)) + 1),
+	lists:mapfoldl(
+		fun(A,{L, Ihm}) -> 
+			P0 = {MW,L - MH},
+			P1 = {W-MW, L - MH},
+			StringName = integer_to_list(Ihm),
+			egd:text(Image, {MW - 45,L - MH - 15}, Font, StringName, Color),
+			egd:line(Image,P0,P1,Color),
+			{ { P0 , P1 } ,{L-Len,Ihm + Len}}
+		end, {H,0}, P),
+	ok.
 
-%make_silver_lines(Image,GraphOps) -> 
-% v = round(maxY / len(maxY)) * len(maxY),
-% lists:mapfoldl(fun({X,Y},L) -> 
-%{ {MW,L+len} , {W-MW, L+len} } end, 0, Points),
-%egd:line().
-	
 	
