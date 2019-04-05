@@ -35,7 +35,7 @@ add_date(Value, GraphOpt) ->
 
 made_margin(GraphOpt) ->
 	Width = GraphOpt#opts.width,
-	Height = GraphOpt#opts.height,
+	%Height = GraphOpt#opts.height,
 	NewGraphOpt = GraphOpt#opts{margowidth = trunc(Width / 10), margoheight = 3 * 30},
 	NewGraphOpt.
 
@@ -95,7 +95,7 @@ change_position(Data,GraphOpt = #opts{date = true}) ->
 	NewData = lists:map(
 			fun({Name,Points}) ->
 				{NewPoints,_} = lists:mapfoldl(
-					fun({X,Y},NX) ->
+					fun({_,Y},NX) ->
 						{ {NX,Y}, NX + 45 } 
 					end, 0, Points),
 				{Name, NewPoints}
@@ -187,7 +187,7 @@ load_font(Font) ->
     end.
 
 make_number(Points, Image, GraphOpt) -> 
-	LabelPoints = lists:map(fun({X,Y}) ->
+	LabelPoints = lists:map(fun({X,_}) ->
 		{X - 15, (GraphOpt#opts.height - GraphOpt#opts.margoheight)}
 	end,Points),
 	{BeginDate,EndDate} = GraphOpt#opts.dateValue,
@@ -208,7 +208,7 @@ make_day_label([WP],[{Y,_,_} | _ ],Image) ->
 	egd:text(Image, WP, WFont, WStringName, WColor),
 	Image;
 
-make_day_label([P | LabelPoints],[{Y,M,D} | Dates],Image) ->
+make_day_label([P | LabelPoints],[{_,M,D} | Dates],Image) ->
 	Color = egd:color(silver),
 	StringName = integer_to_list(D) ++ "/ " ++ integer_to_list(M),
 	io:format("Hello : ~p Dates : ~p ~n", [StringName,Dates]),
@@ -253,10 +253,10 @@ make_silver_lines(Image,GraphOps) ->
 	Color = egd:color({211,211,211,1}),
 	Font = load_font("Helvetica20.wingsfont"),
 	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
-	Estimation = round(MaxY / Len) * Len,
+%	Estimation = round(MaxY / Len) * Len,
 	P = lists:seq(1,length(integer_to_list(MaxY)) + 1),
 	lists:mapfoldl(
-		fun(A,{L, Ihm}) -> 
+		fun(_,{L, Ihm}) -> 
 			P0 = {MW,L - MH},
 			P1 = {W-MW, L - MH},
 			StringName = integer_to_list(Ihm),
