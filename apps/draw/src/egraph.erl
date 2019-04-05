@@ -1,19 +1,7 @@
 -module(egraph). %sorry for my english
--export([init/0,days/1,next_day/1]).
+-export([graph/2,days/1,next_day/1]).
 
 -record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue,maxValue}).
--define(COUNT, 17).
-
-init() -> 
-	L1 = {test1, [{0,150}, {100,40}, {150,95}, {200,160}, {300,190}, {350, 270}, {400, 50}, {600, 20}]},
-    L2 = {test2, [{0,200}, {100,60}, {150,190}, {200,10}, {300,90}, {350, 220}, {400, 90}, {600, 20}]},
-    L3 = {test3, [{0,50},  {100,100}, {150,9}, {200,100}, {300,100}, {350, 20}, {400, 150}, {600, 120}]},
-    Opt = [
-		    {height,500},
-		    {width,800},
-		    {date, { {2019,2,15},{2019,2,25} } }
-	    ],
-	graph([L1,L2,L3],Opt).
 
 graph(Data,Opt) -> 
 	GraphOpt = create_options_record(Opt),
@@ -32,7 +20,7 @@ create_options_record(Opts) ->
 		dateValue = {{2019,2,4},{2019,6,25}}
 	},
 	create_options_record(Opts,GraphOpt).
-create_options_record([],GraphOpt) -> made_margo(GraphOpt);
+create_options_record([],GraphOpt) -> made_margin(GraphOpt);
 create_options_record([{Label, Value} | Opts],GraphOpt) ->
 	NewGraphOpt = case Label of
 		width -> GraphOpt#opts{width = Value};
@@ -42,11 +30,10 @@ create_options_record([{Label, Value} | Opts],GraphOpt) ->
 	end,
 	create_options_record(Opts,NewGraphOpt).
 
-%I trust you and than you use valid values
 add_date(Value, GraphOpt) -> 
 	GraphOpt#opts{date = true, dateValue = Value}.
 
-made_margo(GraphOpt) ->
+made_margin(GraphOpt) ->
 	Width = GraphOpt#opts.width,
 	Height = GraphOpt#opts.height,
 	NewGraphOpt = GraphOpt#opts{margowidth = trunc(Width / 10), margoheight = 3 * 30},
@@ -57,7 +44,6 @@ add_lines([ {Name, Points} ],Image,GraphOpt) ->
 	make_label(Name, Image, Color, NewGraphOpt),
 	make_line(Points,Image, Color),
 	make_number(Points, Image, NewGraphOpt),
-%	make_silver_lines(Image, Points, NewGraphOpt),
 	Image;
 
 add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
@@ -87,7 +73,6 @@ create(GraphOpt) ->
 	Image.
 
 color(GraphOpt) ->  
-%	List = [black, silver, gray, white, maroon, red, purple, fuchia, green, lime, olive, yellow, navy, blue, teal, aqua],
 	Number = GraphOpt#opts.numberOfLine,
 	Color = 
 		case Number of
@@ -100,7 +85,7 @@ color(GraphOpt) ->
 
 save(Image) ->
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
-	FileName = "wgraph" ++ erlang:integer_to_list(?COUNT) ++ ".png",
+	FileName = "wgraph.png",
 	egd:save(Png, FileName),
     egd:destroy(Image),
     Png.
@@ -111,7 +96,7 @@ change_position(Data,GraphOpt = #opts{date = true}) ->
 			fun({Name,Points}) ->
 				{NewPoints,_} = lists:mapfoldl(
 					fun({X,Y},NX) ->
-						{ {NX,Y}, NX + 45 } %black magic that doesn't make me happy....
+						{ {NX,Y}, NX + 45 } 
 					end, 0, Points),
 				{Name, NewPoints}
 			end, Data),
@@ -157,7 +142,6 @@ find_acc(Points,Edges) ->
 		end, {MinW,MinH,MaxW,MaxH},Points),
 	Acc.
 
-%yes, I was sooooo creative
 acc(A,B) ->
 	{MinW,MinH,MaxW,MaxH} = B,
 	case A of
@@ -259,8 +243,7 @@ next_day({Y,M,D}) ->
 					end
 		end,
 	NextDay.
-
-%black magic part... again... 
+ 
 make_silver_lines(Image,GraphOps) -> 
 	MaxY = GraphOps#opts.maxValue,
 	MW = GraphOps#opts.margowidth,
