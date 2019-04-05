@@ -1,5 +1,5 @@
 -module(egraph). %sorry for my english
--export([init/0]).
+-export([init/0,days/1,next_day/1]).
 
 -record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue,maxValue}).
 -define(COUNT, 17).

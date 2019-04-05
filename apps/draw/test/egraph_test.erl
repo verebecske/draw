@@ -30,25 +30,8 @@ nextDay_test() ->
 	?assertMatch(N2, next_day(D2)),
 	?assertMatch(N3, next_day(D3)).
 
-days({BeginDate,EndDate}) -> 
-	days([BeginDate],EndDate).
+days(Days) -> 
+	egraph:days(Days).
 
-days(Days, EndDate) -> 
-	BeginDate = lists:last(Days),
-	NextDay = next_day(BeginDate),
-	Dates = Days ++ [NextDay],
-	case NextDay of
-		EndDate -> ?debugFmt("Yeey: ~p : ~p ~n", [NextDay,EndDate]), Dates;
-		_ -> days(Dates,EndDate)
-	end.
-
-next_day({Y,M,D}) -> 
-	NextDay = 
-		case calendar:valid_date({Y,M,D+1}) of 
-			true -> {Y,M,D+1};
-			false -> case calendar:valid_date({Y,M+1,1}) of 
-						true -> {Y,M+1,1};
-						false -> {Y+1,1,1}
-					end
-		end,
-	NextDay.
+next_day(Day) -> 
+	egraph:next_day(Day).
