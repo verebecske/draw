@@ -2,8 +2,7 @@
 -export([init/0]).
 
 -record(opts, {width,height,numberOfLine,margowidth,margoheight,date,dateValue,maxValue}).
--define(COUNT, 16).
-
+-define(COUNT, 17).
 
 init() -> 
 	L1 = {test1, [{0,150}, {100,40}, {150,95}, {200,160}, {300,190}, {350, 270}, {400, 50}, {600, 20}]},
@@ -12,9 +11,8 @@ init() ->
     Opt = [
 		    {height,500},
 		    {width,800},
-		    {date, { {2019,2,4},{2019,2,12} } }
+		    {date, { {2019,2,15},{2019,2,25} } }
 	    ],
-    % {date, {date(), date()}}
 	graph([L1,L2,L3],Opt).
 
 graph(Data,Opt) -> 
@@ -214,7 +212,7 @@ make_number(Points, Image, GraphOpt) ->
 	make_day_label(NewLabelPoints,Dates,Image),
 	Image.
 
-make_day_label([WP],[{Y,_,_}],Image) -> 
+make_day_label([WP],[{Y,_,_} | _ ],Image) -> 
 	Color = egd:color(silver),
 	StringName = integer_to_list(Y),
 	Font = load_font("Helvetica20.wingsfont"),
@@ -229,15 +227,40 @@ make_day_label([WP],[{Y,_,_}],Image) ->
 make_day_label([P | LabelPoints],[{Y,M,D} | Dates],Image) ->
 	Color = egd:color(silver),
 	StringName = integer_to_list(D) ++ "/ " ++ integer_to_list(M),
+	io:format("Hello : ~p Dates : ~p ~n", [StringName,Dates]),
 	Font = load_font("Helvetica20.wingsfont"),
 	egd:text(Image, P, Font, StringName, Color),
-	make_day_label(LabelPoints,Dates,Image).
+	make_day_label(LabelPoints,Dates,Image);
+
+%this guarantee that it don't crash when the days number is too few or too mutch
+make_day_label(_,_,Image) ->
+	Image.
 
 -spec days({calerdar:date(),calendar:date()}) -> [calendar:date()].
-days({BeginDate,EndDate}) ->
-	Dates = [{2019,1,1},{2019,1,2},{2019,1,3},{2019,1,4},{2019,1,5},{2019,1,6},{2019,1,7},{2019,1,8}],	
-	Dates.
+days({BeginDate,EndDate}) -> 
+	days([BeginDate],EndDate).
 
+days(Days, EndDate) -> 
+	BeginDate = lists:last(Days),
+	NextDay = next_day(BeginDate),
+	Dates = Days ++ [NextDay],
+	case NextDay of
+		EndDate -> Dates;
+		_ -> days(Dates,EndDate)
+	end.
+
+next_day({Y,M,D}) -> 
+	NextDay = 
+		case calendar:valid_date({Y,M,D+1}) of 
+			true -> {Y,M,D+1};
+			false -> case calendar:valid_date({Y,M+1,1}) of 
+						true -> {Y,M+1,1};
+						false -> {Y+1,1,1}
+					end
+		end,
+	NextDay.
+
+%black magic part... again... 
 make_silver_lines(Image,GraphOps) -> 
 	MaxY = GraphOps#opts.maxValue,
 	MW = GraphOps#opts.margowidth,
