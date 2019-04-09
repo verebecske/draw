@@ -1,22 +1,23 @@
 -module(wgraph). 
--export([wombat_graph/2,graph/2]).
+-export([wombat_graph/3]).
 
+-export([make_silver_lines/2]).
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
-wombat_graph([{LA,A},{LB,B},{LC,C}],Date) ->
+wombat_graph([{LA,A},{LB,B},{LC,C}],Date,Unit) ->
 	NA = lists:zip(lists:seq(0,length(A)-1),A),
 	NB = lists:zip(lists:seq(0,length(B)-1),B),
 	NC = lists:zip(lists:seq(0,length(C)-1),C),
-	graph([{LA,NA},{LB,NB},{LC,NC}],Date).
+	graph([{LA,NA},{LB,NB},{LC,NC}],Date,Unit).
 
-graph(Data,Date) -> 
+graph(Data,Date,Unit) -> 
 	GraphOpt = create_options_record(Date),
 	Image = create(GraphOpt),
 	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
 	make_silver_lines(Image, NewGraphOpt),
 	make_day_label(NewData, Date, Image, NewGraphOpt),
+	add_unit_label(Unit,Image,NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
-	%add_year_label(2019,Image),
 	save(Image).
 
 create_options_record(Date) ->
@@ -213,11 +214,19 @@ add_silver_line([], _, Image, _) ->
 	Image;
 
 add_silver_line([H| Heights], [Label |Labels],Image, A = [SBeginPoint, SEndPoint, Color, Font]) ->
+	StringLabel = integer_to_list(Label),
 	StringName = integer_to_list(Label),
-	P0 = {SBeginPoint - 45,H - 15},
+	P0 = {SBeginPoint - (length(StringLabel))* 10,H - 15},
 	P1 = {SBeginPoint, H},
 	P2 = {SEndPoint, H},
 	egd:text(Image, P0, Font, StringName, Color),
 	egd:line(Image,P1,P2,Color),
 	add_silver_line(Heights,Labels, Image, A).	
 
+add_unit_label(Unit, Image, GraphOpt) ->
+	MW = GraphOpt#opts.marginwidth,
+	MH = GraphOpt#opts.marginheight,
+	Color = egd:color(silver),
+	Font = load_font("Helvetica20.wingsfont"),
+	P = {round(MW / 2),MH-50},
+	egd:text(Image, P, Font, Unit, Color).
