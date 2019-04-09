@@ -4,11 +4,13 @@
 -export([make_silver_lines/2]).
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
+-spec wombat_graph([{Label1::atom(),[]},{Label2::atom(),[]},{Label3::atom(),[]}],[],) -> ok.
 wombat_graph([{Label1,A},{Label2,B},{Label3,C}],Date,Unit) ->
 	NewA = lists:zip(lists:seq(0,length(A)-1),A),
 	NewB = lists:zip(lists:seq(0,length(B)-1),B),
 	NewC = lists:zip(lists:seq(0,length(C)-1),C),
-	graph([{Label1,NewA},{Label2,NewB},{Label3,NewC}],Date,Unit).
+	graph([{Label1,NewA},{Label2,NewB},{Label3,NewC}],Date,Unit),
+	ok.
 
 graph(Data,Date,Unit) -> 
 	GraphOpt = create_options_record(Date),
