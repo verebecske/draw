@@ -197,18 +197,18 @@ add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 
 make_silver_lines(Image,GraphOps) -> 
 	MaxY = GraphOps#opts.maxValue,
-	W = GraphOps#opts.width,
-	H = GraphOps#opts.height,
-	MW = GraphOps#opts.marginwidth,
-	MH = GraphOps#opts.marginheight,
+	Width = GraphOps#opts.width,
+	Height = GraphOps#opts.height,
+	MarginWidth = GraphOps#opts.marginwidth,
+	MarginHeight = GraphOps#opts.marginheight,
 	Color = egd:color({211,211,211,1}),
 	Font = load_font("Helvetica20.wingsfont"),
 	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
 	Flo = floor(MaxY / Len),
-	SL = floor((H - 2 * MH) / Flo),
+	SL = floor((Height - 2 * MarginHeight) / Flo),
 	Labels = lists:seq(0,MaxY,Len),
-	Heights = lists:seq(H-MH,MH,-SL),
-	add_silver_line(Heights,Labels,Image,[MW,W-MW,Color,Font]).
+	Heights = lists:seq(Height-MarginHeight,MarginHeight,-SL),
+	add_silver_line(Heights,Labels,Image,[MarginWidth,Width-MarginWidth,Color,Font]).
 
 add_silver_line([], _, Image, _) -> 
 	Image;
