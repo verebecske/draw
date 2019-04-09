@@ -131,25 +131,30 @@ make_line([P0,P1 | Points], Image, Color) ->
 make_label(Name,Image,Color,GraphOpt) -> 
 	Font = load_font("Terminus22.wingsfont"),
 	StringName = erlang:atom_to_list(Name),
-	Y = GraphOpt#opts.height - (GraphOpt#opts.numberOfLine * 22) - 5,
-	P = {15,Y},
-	P0 = {7,Y+12},
-	P1 = {12,Y+17},
+	H = GraphOpt#opts.height,
+	MH = GraphOpt#opts.marginheight,
+	W = GraphOpt#opts.width,
+	N = GraphOpt#opts.numberOfLine,
+	Y = H - trunc(MH / 2),
+	X = (trunc(W / 4) * N) - 100,
+	P = {X,Y},
+	P0 = {X-5,Y+12},
+	P1 = {X-10,Y+17},
 	egd:filledEllipse(Image,P0,P1,Color),
 	egd:text(Image, P, Font, StringName, Color),
 	ok. 
 
 make_wombat_label(Image,GraphOpt) ->
-	WP = {GraphOpt#opts.width - 100, 15},
-	WColor = egd:color({58,135,189}),
-	WStringName = "Wombat",
-	WFont = load_font("Helvetica20.wingsfont"),
-	egd:text(Image, WP, WFont, WStringName, WColor),
+	P = {GraphOpt#opts.width - 100, 15},
+	Color = egd:color({58,135,189}),
+	StringName = "Wombat",
+	Font = load_font("Helvetica20.wingsfont"),
+	egd:text(Image, P, Font, StringName, Color),
 	Image.
 
 save(Image) ->
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
-	FileName = "w1graph.png",
+	FileName = "wgraph.png",
 	egd:save(Png, FileName),
     egd:destroy(Image),
     Png.
@@ -207,12 +212,12 @@ make_silver_lines(Image,GraphOps) ->
 add_silver_line([], _, Image, _) -> 
 	Image;
 
-add_silver_line([H| Heights], [Label |Lts],Image, A = [SBeginPoint, SEndPoint, Color, Font]) ->
+add_silver_line([H| Heights], [Label |Labels],Image, A = [SBeginPoint, SEndPoint, Color, Font]) ->
 	StringName = integer_to_list(Label),
 	P0 = {SBeginPoint - 45,H - 15},
 	P1 = {SBeginPoint, H},
 	P2 = {SEndPoint, H},
 	egd:text(Image, P0, Font, StringName, Color),
 	egd:line(Image,P1,P2,Color),
-	add_silver_line(Heights,Lts, Image, A).	
+	add_silver_line(Heights,Labels, Image, A).	
 
