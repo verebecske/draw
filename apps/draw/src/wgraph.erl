@@ -16,7 +16,7 @@ graph(Data,Date) ->
 	make_silver_lines(Image, NewGraphOpt),
 	make_day_label(NewData, Date, Image, NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
-	add_year_label(2019,Image),
+	%add_year_label(2019,Image),
 	save(Image).
 
 create_options_record(Date) ->
@@ -188,13 +188,6 @@ add_day_label([],_,Image,_,_) ->
 add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
 	add_day_label(LabelPoints, Date ,Image,Font,Color).
-
-add_year_label(Year,Image) ->
-	Color = egd:color(silver),
-	StringName = integer_to_list(Year),
-	Font = load_font("Helvetica20.wingsfont"),
-	P = {15,15},
-	egd:text(Image, P, Font, StringName, Color).
 
 make_silver_lines(Image,GraphOps) -> 
 	MaxY = GraphOps#opts.maxValue,
