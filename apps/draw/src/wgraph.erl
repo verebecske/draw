@@ -4,11 +4,11 @@
 -export([make_silver_lines/2]).
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
-wombat_graph([{LA,A},{LB,B},{LC,C}],Date,Unit) ->
-	NA = lists:zip(lists:seq(0,length(A)-1),A),
-	NB = lists:zip(lists:seq(0,length(B)-1),B),
-	NC = lists:zip(lists:seq(0,length(C)-1),C),
-	graph([{LA,NA},{LB,NB},{LC,NC}],Date,Unit).
+wombat_graph([{Label1,A},{Label2,B},{Label3,C}],Date,Unit) ->
+	NewA = lists:zip(lists:seq(0,length(A)-1),A),
+	NewB = lists:zip(lists:seq(0,length(B)-1),B),
+	NewC = lists:zip(lists:seq(0,length(C)-1),C),
+	graph([{Label1,NewA},{Label2,NewB},{Label3,NewC}],Date,Unit).
 
 graph(Data,Date,Unit) -> 
 	GraphOpt = create_options_record(Date),
@@ -46,22 +46,22 @@ create(GraphOpt) ->
 	Image.
 
 change_position(Data,GraphOpt) ->
-	MW = GraphOpt#opts.marginwidth,
-	MH = GraphOpt#opts.marginheight,
-	LW = GraphOpt#opts.width - (2 * MW),
-	LH = GraphOpt#opts.height - (2 * MH),
+	MarginWidth = GraphOpt#opts.marginwidth,
+	MarginHeight = GraphOpt#opts.marginheight,
+	LineWidth = GraphOpt#opts.width - (2 * MarginWidth),
+	LineHeight = GraphOpt#opts.height - (2 * MarginHeight),
 	{MinW,MinH,MaxW,MaxH} = edges(Data),  
 	Len = round(math:pow(10,length(integer_to_list(MaxH))-1)),
 	Estimation = (floor(MaxH / Len)+1) * Len,
-	SW = new_value(LW,MinW,MaxW),
-	SH = new_value(LH,MinH,Estimation),
+	SW = new_value(LineWidth,MinW,MaxW),
+	SH = new_value(LineHeight,MinH,Estimation),
 	NewData = lists:map( 
 		fun({Name,Points}) -> 
 			{Name, lists:map(
 					fun({W,H}) ->
-						NW = ((W * SW) + MW),
-						NH = (mirroring((H * SH),LH)+ MH),
-						{trunc(NW),trunc(NH)}
+						NewW = ((W * SW) + MarginWidth),
+						NewH = (mirroring((H * SH),LineHeight)+ MarginHeight),
+						{trunc(NewW),trunc(NewH)}
 					end, Points)}
 		end, Data),	
 	{NewData,GraphOpt#opts{maxValue = Estimation}}.
@@ -70,10 +70,10 @@ new_value(L,Min,Max) ->
 	(L / (Max - Min)).
 
 mirroring(Y, AY) ->
-	SAxis = trunc(AY/2),
-	case Y < SAxis of 
-		true -> Y - 2 * (Y - SAxis);
-		false -> Y + 2 * (SAxis - Y)
+	SymmetryAxis = trunc(AY/2),
+	case Y < SymmetryAxis of 
+		true -> Y - 2 * (Y - SymmetryAxis);
+		false -> Y + 2 * (SymmetryAxis - Y)
 	end.
 
 edges(Data) ->
@@ -204,7 +204,7 @@ make_silver_lines(Image,GraphOps) ->
 	Color = egd:color({211,211,211,1}),
 	Font = load_font("Helvetica20.wingsfont"),
 	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
-	Flo = (floor(MaxY / Len)),
+	Flo = floor(MaxY / Len),
 	SL = floor((H - 2 * MH) / Flo),
 	Labels = lists:seq(0,MaxY,Len),
 	Heights = lists:seq(H-MH,MH,-SL),
@@ -213,15 +213,15 @@ make_silver_lines(Image,GraphOps) ->
 add_silver_line([], _, Image, _) -> 
 	Image;
 
-add_silver_line([H| Heights], [Label |Labels],Image, A = [SBeginPoint, SEndPoint, Color, Font]) ->
+add_silver_line([Height| Heights], [Label |Labels],Image, Const = [SBeginPoint, SEndPoint, Color, Font]) ->
 	StringLabel = integer_to_list(Label),
 	StringName = integer_to_list(Label),
-	P0 = {SBeginPoint - (length(StringLabel))* 10,H - 15},
-	P1 = {SBeginPoint, H},
-	P2 = {SEndPoint, H},
+	P0 = {SBeginPoint - (length(StringLabel))* 10,Height - 15},
+	P1 = {SBeginPoint, Height},
+	P2 = {SEndPoint, Height},
 	egd:text(Image, P0, Font, StringName, Color),
 	egd:line(Image,P1,P2,Color),
-	add_silver_line(Heights,Labels, Image, A).	
+	add_silver_line(Heights,Labels, Image, Const).	
 
 add_unit_label(Unit, Image, GraphOpt) ->
 	MW = GraphOpt#opts.marginwidth,
