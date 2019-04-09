@@ -13,7 +13,7 @@ graph(Data,Date) ->
 	GraphOpt = create_options_record(Date),
 	Image = create(GraphOpt),
 	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
-	make_silver_lines(Image, Date, NewGraphOpt),
+	make_silver_lines(Image, NewGraphOpt),
 	make_day_label(NewData, Date, Image, NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
 	add_year_label(2019,Image),
@@ -21,7 +21,7 @@ graph(Data,Date) ->
 
 create_options_record(Date) ->
 	Width = 800,
-	GraphOpt = #opts{
+	#opts{
 		numberOfLine = 0,
 		width = Width,
 		height = 500,
@@ -84,7 +84,7 @@ edges(Data) ->
 	{_,Acc} = lists:mapfoldl(
 			fun({Name,Points},NewEdges) -> 
 				NewAcc = find_acc(Points,NewEdges),
-				{{ Name,  NewAcc},
+				{{ Name, NewAcc},
 				acc(NewEdges, NewAcc)}
 			end, Edges, Data),
 	Acc.
@@ -123,7 +123,7 @@ add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
 	make_line(Points,Image, Color),
 	add_lines(Data,Image,NewGraphOpt).
 
-make_line([Point],Image,Color) -> Image;
+make_line([_],Image, _) -> Image;
 make_line([P0,P1 | Points], Image, Color) ->
 	egd:line(Image,P0,P1,Color),
 	make_line([P1 | Points], Image, Color).
@@ -174,31 +174,6 @@ load_font(Font) ->
             egd_font:load_binary(FontBinary)
     end.
 
-make_silver_lines(Image,Date,GraphOps) -> 
-	MaxY = GraphOps#opts.maxValue,
-	W = GraphOps#opts.width,
-	H = GraphOps#opts.height,
-	MW = GraphOps#opts.marginwidth,
-	MH = GraphOps#opts.marginheight,
-	Color = egd:color({211,211,211,1}),
-	Font = load_font("Helvetica20.wingsfont"),
-	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
-	Flo = (floor(MaxY / Len)),
-	Estimation = (Flo+1) * Len,
-	SL = floor((H - 2 * MH) / Flo),
-	P = lists:seq(1,(Flo+1)),
-
-	lists:mapfoldl(
-		fun(_,{L, Ihm}) -> 
-			P0 = {MW,L - MH},
-			P1 = {W-MW, L - MH},
-			StringName = integer_to_list(Ihm),
-			egd:text(Image, {MW - 45,L - MH - 15}, Font, StringName, Color),
-			egd:line(Image,P0,P1,Color),
-			{ { P0 , P1 } ,{L-SL,Ihm + Len}}
-		end, {H,0}, P),
-	Image.
-
 make_day_label(Data, Date, Image, GraphOpt) -> 
 	{_, Points} = hd(Data),
  	LabelPoints = lists:map(fun({X,_}) ->
@@ -221,5 +196,30 @@ add_year_label(Year,Image) ->
 	P = {15,15},
 	egd:text(Image, P, Font, StringName, Color).
 
+make_silver_lines(Image,GraphOps) -> 
+	MaxY = GraphOps#opts.maxValue,
+	W = GraphOps#opts.width,
+	H = GraphOps#opts.height,
+	MW = GraphOps#opts.marginwidth,
+	MH = GraphOps#opts.marginheight,
+	Color = egd:color({211,211,211,1}),
+	Font = load_font("Helvetica20.wingsfont"),
+	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
+	Flo = (floor(MaxY / Len)),
+	SL = floor((H - 2 * MH) / Flo),
+	Labels = lists:seq(0,MaxY,Len),
+	Heights = lists:seq(H-MH,MH,-SL),
+	add_silver_line(Heights,Labels,Image,[MW,W-MW,Color,Font]).
 
+add_silver_line([], _, Image, _) -> 
+	Image;
+
+add_silver_line([H| Heights], [Label |Lts],Image, A = [SBeginPoint, SEndPoint, Color, Font]) ->
+	StringName = integer_to_list(Label),
+	P0 = {SBeginPoint - 45,H - 15},
+	P1 = {SBeginPoint, H},
+	P2 = {SEndPoint, H},
+	egd:text(Image, P0, Font, StringName, Color),
+	egd:line(Image,P1,P2,Color),
+	add_silver_line(Heights,Lts, Image, A).	
 
