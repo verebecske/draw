@@ -4,7 +4,7 @@
 -export([make_silver_lines/2]).
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
--spec wombat_graph([{Label1::atom(),[]},{Label2::atom(),[]},{Label3::atom(),[]}],[],) -> ok.
+-spec wombat_graph([ { atom(), [integer()] } ], [ [char()] ], [char()]) -> ok.
 wombat_graph([{Label1,A},{Label2,B},{Label3,C}],Date,Unit) ->
 	NewA = lists:zip(lists:seq(0,length(A)-1),A),
 	NewB = lists:zip(lists:seq(0,length(B)-1),B),
