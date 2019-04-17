@@ -1,18 +1,16 @@
 -module(wgraph). 
 -export([wombat_graph/3]).
 
--export([make_silver_lines/2]).
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
--spec wombat_graph([ { atom(), [integer()] } ], [ [char()] ], [char()]) -> ok.
-wombat_graph([{Label1,A},{Label2,B},{Label3,C}],Date,Unit) ->
+wombat_graph([{Label1,A},{Label2,B},{Label3,C}],Date,Opt) ->
 	NewA = lists:zip(lists:seq(0,length(A)-1),A),
 	NewB = lists:zip(lists:seq(0,length(B)-1),B),
 	NewC = lists:zip(lists:seq(0,length(C)-1),C),
-	graph([{Label1,NewA},{Label2,NewB},{Label3,NewC}],Date,Unit),
+	graph([{Label1,NewA},{Label2,NewB},{Label3,NewC}],Date,Opt),
 	ok.
 
-graph(Data,Date,Unit) -> 
+graph(Data,Date,[Unit,Filename]) -> 
 	GraphOpt = create_options_record(Date),
 	Image = create(GraphOpt),
 	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
@@ -20,7 +18,7 @@ graph(Data,Date,Unit) ->
 	make_day_label(NewData, Date, Image, NewGraphOpt),
 	add_unit_label(Unit,Image,NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
-	save(Image).
+	save(Image,Filename).
 
 create_options_record(Date) ->
 	Width = 800,
@@ -155,12 +153,12 @@ make_wombat_label(Image,GraphOpt) ->
 	egd:text(Image, P, Font, StringName, Color),
 	Image.
 
-save(Image) ->
+save(Image,Filename) ->
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
-	FileName = "wgraph.png",
-	egd:save(Png, FileName),
+	file:write_file(Filename,Png),
     egd:destroy(Image),
     Png.
+
 
 color(GraphOpt) ->  
 	Number = GraphOpt#opts.numberOfLine,
