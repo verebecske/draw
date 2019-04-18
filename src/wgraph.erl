@@ -3,11 +3,9 @@
 
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
-wombat_graph([{Label1,A},{Label2,B},{Label3,C}],Date,Opt) ->
-	NewA = lists:zip(lists:seq(0,length(A)-1),A),
-	NewB = lists:zip(lists:seq(0,length(B)-1),B),
-	NewC = lists:zip(lists:seq(0,length(C)-1),C),
-	graph([{Label1,NewA},{Label2,NewB},{Label3,NewC}],Date,Opt),
+wombat_graph(Data,Date,Opt) ->
+	NewData = add_parameter_X(Data,[]),
+	graph(NewData,Date,Opt),
 	ok.
 
 graph(Data,Date,[Unit,Filename]) -> 
@@ -59,8 +57,8 @@ change_position(Data,GraphOpt) ->
 		fun({Name,Points}) -> 
 			{Name, lists:map(
 					fun({W,H}) ->
-						NewW = ((W * SW) + MarginWidth),
-						NewH = (mirroring((H * SH),LineHeight)+ MarginHeight),
+						NewW = (W * SW) + MarginWidth,
+						NewH = mirroring((H * SH),LineHeight) + MarginHeight,
 						{trunc(NewW),trunc(NewH)}
 					end, Points)}
 		end, Data),	
@@ -79,8 +77,8 @@ mirroring(Y, AY) ->
 edges(Data) ->
 	MaxW = 0,
 	MaxH = 0, 
-	{_, Points} = hd(Data),
-	{MinH,MinW} = hd(Points),
+	{_, DataPoints} = hd(Data),
+	{MinH,MinW} = hd(DataPoints),
 	Edges = {MinW,MinH,MaxW,MaxH},
 	{_,Acc} = lists:mapfoldl(
 			fun({Name,Points},NewEdges) -> 
@@ -181,7 +179,7 @@ load_font(Font) ->
     end.
 
 make_day_label(Data, Date, Image, GraphOpt) -> 
-	{_, Points} = hd(Data),
+	Points = element(2,lists:max(lists:map( fun({_,Datas}) -> {length(Datas),Datas} end, Data))),
  	LabelPoints = lists:map(fun({X,_}) ->
  		{X - 15, (GraphOpt#opts.height - GraphOpt#opts.marginheight)}
  	end,Points),
@@ -230,3 +228,15 @@ add_unit_label(Unit, Image, GraphOpt) ->
 	Font = load_font("Helvetica20.wingsfont"),
 	P = {round(MW / 2),MH-50},
 	egd:text(Image, P, Font, Unit, Color).
+
+add_parameter_X([],NewList) ->
+	NewList;
+add_parameter_X([{Label,List} | Rest], ListWithX) ->
+	MinList = case List of
+		[] -> [0,0];
+		[One] -> [0,One];
+		More -> More
+	end,
+	DataWithX = lists:zip(lists:seq(0,length(MinList)-1),MinList),
+	NewListWithX = ListWithX ++ [{Label, DataWithX}],
+	add_parameter_X(Rest,NewListWithX).
