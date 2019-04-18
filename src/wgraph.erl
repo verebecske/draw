@@ -165,7 +165,7 @@ color(GraphOpt) ->
 			0 -> {58,135,189};
 			1 -> {255,127,14};
 			2 -> {44,160,44};
-			_ -> yellow
+			_ -> green
 		end,
 	{egd:color(Color),GraphOpt#opts{numberOfLine = Number + 1}}.  
 
