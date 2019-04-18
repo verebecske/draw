@@ -203,11 +203,11 @@ make_silver_lines(Image,GraphOps) ->
 	MarginHeight = GraphOps#opts.marginheight,
 	Color = egd:color({211,211,211,1}),
 	Font = load_font("Helvetica20.wingsfont"),
-	Len = round(math:pow(10,length(integer_to_list(MaxY))-1)),
-	Flo = floor(MaxY / Len),
-	SL = floor((Height - 2 * MarginHeight) / Flo),
-	Labels = lists:seq(0,MaxY,Len),
-	Heights = lists:seq(Height-MarginHeight,MarginHeight,-SL),
+	Unit = round(math:pow(10,length(integer_to_list(MaxY))-1)),
+	LineCount = floor(MaxY / Unit), 
+	LineDistance = floor((Height - 2 * MarginHeight) / LineCount),
+	Labels = lists:seq(0,MaxY,Unit),
+	Heights = lists:seq(Height-MarginHeight,MarginHeight,-LineDistance),
 	add_silver_line(Heights,Labels,Image,[MarginWidth,Width-MarginWidth,Color,Font]).
 
 add_silver_line([], _, Image, _) -> 
