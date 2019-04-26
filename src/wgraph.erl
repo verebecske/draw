@@ -13,8 +13,8 @@ graph(Data,Date,[Unit,Filename]) ->
 	GraphOpt = create_options_record(Date),
 	Image = create(GraphOpt),
 	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
-	make_silver_lines(Image, NewGraphOpt),
-	make_day_label(NewData, Date, Image, NewGraphOpt),
+	create_silver_lines(Image, NewGraphOpt),
+	create_day_label(NewData, Date, Image, NewGraphOpt),
 	add_unit_label(Unit,Image,NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
 	save(Image,Filename).
@@ -43,7 +43,7 @@ create(GraphOpt) ->
 	P2 = {Width-MarginWidth,Height-MarginHeight},
 	egd:line(Image,P0,P1,Color),
 	egd:line(Image,P1,P2,Color),
-	make_wombat_label(Image,GraphOpt),
+	create_wombat_label(Image,GraphOpt),
 	Image.
 
 %
@@ -116,22 +116,22 @@ acc(A,B) ->
 
 add_lines([ {Name, Points} ],Image,GraphOpt) -> 
 	{Color,NewGraphOpt} = color(GraphOpt),
-	make_label(Name, Image, Color, NewGraphOpt),
-	make_line(Points,Image, Color),
+	create_label(Name, Image, Color, NewGraphOpt),
+	create_line(Points,Image, Color),
 	Image;
 
 add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
 	{Color,NewGraphOpt} = color(GraphOpt),
-	make_label(Name, Image, Color,NewGraphOpt),
-	make_line(Points,Image, Color),
+	create_label(Name, Image, Color,NewGraphOpt),
+	create_line(Points,Image, Color),
 	add_lines(Data,Image,NewGraphOpt).
 
-make_line([_],Image, _) -> Image;
-make_line([P0,P1 | Points], Image, Color) ->
+create_line([_],Image, _) -> Image;
+create_line([P0,P1 | Points], Image, Color) ->
 	egd:line(Image,P0,P1,Color),
-	make_line([P1 | Points], Image, Color).
+	create_line([P1 | Points], Image, Color).
 
-make_label(Name,Image,Color,GraphOpt) -> 
+create_label(Name,Image,Color,GraphOpt) -> 
 	Font = load_font("Terminus22.wingsfont"),
 	StringName = erlang:atom_to_list(Name),
 	H = GraphOpt#opts.height,
@@ -147,7 +147,7 @@ make_label(Name,Image,Color,GraphOpt) ->
 	egd:text(Image, P, Font, StringName, Color),
 	ok. 
 
-make_wombat_label(Image,GraphOpt) ->
+create_wombat_label(Image,GraphOpt) ->
 	P = {GraphOpt#opts.width - 100, 15},
 	Color = egd:color({58,135,189}),
 	StringName = "Wombat",
@@ -182,7 +182,7 @@ load_font(Font) ->
             egd_font:load_binary(FontBinary)
     end.
 
-make_day_label(Data, Date, Image, GraphOpt) -> 
+create_day_label(Data, Date, Image, GraphOpt) -> 
 	Points = element(2,lists:max(lists:map( fun({_,Datas}) -> {length(Datas),Datas} end, Data))),
  	LabelPoints = lists:map(fun({X,_}) ->
  		{X - 15, (GraphOpt#opts.height - GraphOpt#opts.marginheight)}
@@ -199,7 +199,7 @@ add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
 	add_day_label(LabelPoints, Date ,Image,Font,Color).
 
-make_silver_lines(Image,GraphOps) -> 
+create_silver_lines(Image,GraphOps) -> 
 	MaxY = GraphOps#opts.maxValue,
 	Width = GraphOps#opts.width,
 	Height = GraphOps#opts.height,
