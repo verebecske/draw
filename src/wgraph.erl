@@ -1,8 +1,9 @@
 -module(wgraph). 
--export([wombat_graph/3]).
+-export([wombat_graph/3, graph/3]).
 
 -record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
 
+%transform data from wombat, add coord X
 wombat_graph(Data,Date,Opt) ->
 	NewData = add_parameter_X(Data,[]),
 	graph(NewData,Date,Opt),
@@ -28,6 +29,8 @@ create_options_record(Date) ->
 		marginwidth = trunc(Width / 10), 
 		marginheight = 3 * 30}.
 
+%it create the basic white image with the time and value axis
+%and add text "Wombat"
 create(GraphOpt) ->
 	Width = GraphOpt#opts.width,
 	Height = GraphOpt#opts.height,
@@ -43,6 +46,7 @@ create(GraphOpt) ->
 	make_wombat_label(Image,GraphOpt),
 	Image.
 
+%
 change_position(Data,GraphOpt) ->
 	MarginWidth = GraphOpt#opts.marginwidth,
 	MarginHeight = GraphOpt#opts.marginheight,
@@ -188,6 +192,8 @@ make_day_label(Data, Date, Image, GraphOpt) ->
  	add_day_label(LabelPoints,Date,Image,Font,Color).	
 
 add_day_label([],_,Image,_,_) -> 
+	Image;
+add_day_label(_,[],Image,_,_) ->
 	Image;
 add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
