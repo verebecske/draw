@@ -3,7 +3,7 @@
 
 -record(wgraph_opts, {width,height,numberOfLine,marginwidth,marginheight,maxValue}).
 
-%transform data from wombat, add coord X
+%transform data from wombat, add coord X and default values
 %return binary 
 wombat_graph(Data,Date,Unit) ->
 	NewData = add_parameter_X(Data,[]),
