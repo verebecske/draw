@@ -1,5 +1,5 @@
 -module(wgraph). 
--export([wombat_graph/3, graph/4]).
+-export([wombat_graph/3, graph/5]).
 
 -record(wgraph_opts, {width,height,numberOfLine,marginwidth,marginheight,maxValue}).
 
@@ -7,10 +7,11 @@
 %return binary 
 wombat_graph(Data,Date,Unit) ->
 	NewData = add_parameter_X(Data,[]),
-	graph(NewData,Date,Unit,["wgraph.png"]).
+	OptsMap = #{width => 800, height => 500, marginwidth => 80, marginheight => 90},
+	graph(NewData,Date,Unit,"wgraph.png",OptsMap).
 
-graph(Data,Labels,Unit,[Filename]) -> 
-	GraphOpt = create_options_record(),
+graph(Data,Labels,Unit,Filename,OptsMap) -> 
+	GraphOpt = create_options_record(OptsMap),
 	Image = create(GraphOpt),
 	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
 	create_silver_lines(Image, NewGraphOpt),
@@ -19,14 +20,14 @@ graph(Data,Labels,Unit,[Filename]) ->
 	add_lines(NewData,Image,NewGraphOpt),
 	save(Image,Filename).
 
-create_options_record() ->
-	Width = 800,
+create_options_record(OptsMap) ->
 	#wgraph_opts{
 		numberOfLine = 0,
-		width = Width,
-		height = 500,
-		marginwidth = trunc(Width / 10), 
-		marginheight = 3 * 30}.
+		width = maps:get(width,OptsMap),
+		height = maps:get(height,OptsMap),
+		marginwidth = maps:get(marginwidth,OptsMap), 
+		marginheight = maps:get(marginheight,OptsMap)
+		}.
 
 %it create the basic white image with the time and value axis
 %and add text "Wombat"
