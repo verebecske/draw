@@ -6,8 +6,7 @@
 %transform data from wombat, add coord X
 wombat_graph(Data,Date,Opt) ->
 	NewData = add_parameter_X(Data,[]),
-	graph(NewData,Date,Opt),
-	ok.
+	graph(NewData,Date,Opt).
 
 graph(Data,Date,[Unit,Filename]) -> 
 	GraphOpt = create_options_record(Date),
@@ -160,7 +159,6 @@ save(Image,Filename) ->
 	file:write_file(Filename,Png),
     egd:destroy(Image),
     Png.
-
 
 color(GraphOpt) ->  
 	Number = GraphOpt#opts.numberOfLine,
