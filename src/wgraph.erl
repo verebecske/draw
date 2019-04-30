@@ -1,40 +1,40 @@
 -module(wgraph). 
--export([wombat_graph/3, graph/3]).
+-export([wombat_graph/3, graph/4]).
 
--record(opts, {width,height,numberOfLine,marginwidth,marginheight,dates,maxValue}).
+-record(wgraph_opts, {width,height,numberOfLine,marginwidth,marginheight,maxValue}).
 
 %transform data from wombat, add coord X
-wombat_graph(Data,Date,Opt) ->
+%return binary 
+wombat_graph(Data,Date,Unit) ->
 	NewData = add_parameter_X(Data,[]),
-	graph(NewData,Date,Opt).
+	graph(NewData,Date,Unit,["wgraph.png"]).
 
-graph(Data,Date,[Unit,Filename]) -> 
-	GraphOpt = create_options_record(Date),
+graph(Data,Labels,Unit,[Filename]) -> 
+	GraphOpt = create_options_record(),
 	Image = create(GraphOpt),
 	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
 	create_silver_lines(Image, NewGraphOpt),
-	create_day_label(NewData, Date, Image, NewGraphOpt),
+	create_day_label(NewData, Labels, Image, NewGraphOpt),
 	add_unit_label(Unit,Image,NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
 	save(Image,Filename).
 
-create_options_record(Date) ->
+create_options_record() ->
 	Width = 800,
-	#opts{
+	#wgraph_opts{
 		numberOfLine = 0,
 		width = Width,
 		height = 500,
-		dates = Date,
 		marginwidth = trunc(Width / 10), 
 		marginheight = 3 * 30}.
 
 %it create the basic white image with the time and value axis
 %and add text "Wombat"
 create(GraphOpt) ->
-	Width = GraphOpt#opts.width,
-	Height = GraphOpt#opts.height,
-	MarginWidth = GraphOpt#opts.marginwidth,
-	MarginHeight = GraphOpt#opts.marginheight,
+	Width = GraphOpt#wgraph_opts.width,
+	Height = GraphOpt#wgraph_opts.height,
+	MarginWidth = GraphOpt#wgraph_opts.marginwidth,
+	MarginHeight = GraphOpt#wgraph_opts.marginheight,
 	Image = egd:create(Width,Height),
 	Color = egd:color(silver),
 	P0 = {MarginWidth,MarginHeight},
@@ -45,12 +45,12 @@ create(GraphOpt) ->
 	create_wombat_label(Image,GraphOpt),
 	Image.
 
-%
+%transform values to X and Y coordinate
 change_position(Data,GraphOpt) ->
-	MarginWidth = GraphOpt#opts.marginwidth,
-	MarginHeight = GraphOpt#opts.marginheight,
-	LineWidth = GraphOpt#opts.width - (2 * MarginWidth),
-	LineHeight = GraphOpt#opts.height - (2 * MarginHeight),
+	MarginWidth = GraphOpt#wgraph_opts.marginwidth,
+	MarginHeight = GraphOpt#wgraph_opts.marginheight,
+	LineWidth = GraphOpt#wgraph_opts.width - (2 * MarginWidth),
+	LineHeight = GraphOpt#wgraph_opts.height - (2 * MarginHeight),
 	{MinW,MinH,MaxW,MaxH} = edges(Data),  
 	Len = round(math:pow(10,length(integer_to_list(MaxH))-1)),
 	Estimation = (floor(MaxH / Len)+1) * Len,
@@ -65,7 +65,7 @@ change_position(Data,GraphOpt) ->
 						{trunc(NewW),trunc(NewH)}
 					end, Points)}
 		end, Data),	
-	{NewData,GraphOpt#opts{maxValue = Estimation}}.
+	{NewData,GraphOpt#wgraph_opts{maxValue = Estimation}}.
 
 new_value(L,Min,Max) ->
 	(L / (Max - Min)).
@@ -77,6 +77,7 @@ mirroring(Y, AY) ->
 		false -> Y + 2 * (SymmetryAxis - Y)
 	end.
 
+%find the minimal and maximal X and Y
 edges(Data) ->
 	MaxW = 0,
 	MaxH = 0, 
@@ -133,10 +134,10 @@ create_line([P0,P1 | Points], Image, Color) ->
 create_label(Name,Image,Color,GraphOpt) -> 
 	Font = load_font("Terminus22.wingsfont"),
 	StringName = erlang:atom_to_list(Name),
-	H = GraphOpt#opts.height,
-	MH = GraphOpt#opts.marginheight,
-	W = GraphOpt#opts.width,
-	N = GraphOpt#opts.numberOfLine,
+	H = GraphOpt#wgraph_opts.height,
+	MH = GraphOpt#wgraph_opts.marginheight,
+	W = GraphOpt#wgraph_opts.width,
+	N = GraphOpt#wgraph_opts.numberOfLine,
 	Y = H - trunc(MH / 2),
 	X = (trunc(W / 4) * N) - 100,
 	P = {X,Y},
@@ -147,7 +148,7 @@ create_label(Name,Image,Color,GraphOpt) ->
 	ok. 
 
 create_wombat_label(Image,GraphOpt) ->
-	P = {GraphOpt#opts.width - 100, 15},
+	P = {GraphOpt#wgraph_opts.width - 100, 15},
 	Color = egd:color({58,135,189}),
 	StringName = "Wombat",
 	Font = load_font("Helvetica20.wingsfont"),
@@ -161,7 +162,7 @@ save(Image,Filename) ->
     Png.
 
 color(GraphOpt) ->  
-	Number = GraphOpt#opts.numberOfLine,
+	Number = GraphOpt#wgraph_opts.numberOfLine,
 	Color = 
 		case Number of
 			0 -> {58,135,189};
@@ -169,7 +170,7 @@ color(GraphOpt) ->
 			2 -> {44,160,44};
 			_ -> green
 		end,
-	{egd:color(Color),GraphOpt#opts{numberOfLine = Number + 1}}.  
+	{egd:color(Color),GraphOpt#wgraph_opts{numberOfLine = Number + 1}}.  
 
 load_font(Font) ->
     case erl_prim_loader:get_file(filename:join([code:priv_dir(draw),"fonts",Font])) of
@@ -183,7 +184,7 @@ load_font(Font) ->
 create_day_label(Data, Date, Image, GraphOpt) -> 
 	Points = element(2,lists:max(lists:map( fun({_,Datas}) -> {length(Datas),Datas} end, Data))),
  	LabelPoints = lists:map(fun({X,_}) ->
- 		{X - 15, (GraphOpt#opts.height - GraphOpt#opts.marginheight)}
+ 		{X - 15, (GraphOpt#wgraph_opts.height - GraphOpt#wgraph_opts.marginheight)}
  	end,Points),
  	Color = egd:color(silver),
  	Font = load_font("Helvetica20.wingsfont"),
@@ -198,11 +199,11 @@ add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	add_day_label(LabelPoints, Date ,Image,Font,Color).
 
 create_silver_lines(Image,GraphOps) -> 
-	MaxY = GraphOps#opts.maxValue,
-	Width = GraphOps#opts.width,
-	Height = GraphOps#opts.height,
-	MarginWidth = GraphOps#opts.marginwidth,
-	MarginHeight = GraphOps#opts.marginheight,
+	MaxY = GraphOps#wgraph_opts.maxValue,
+	Width = GraphOps#wgraph_opts.width,
+	Height = GraphOps#wgraph_opts.height,
+	MarginWidth = GraphOps#wgraph_opts.marginwidth,
+	MarginHeight = GraphOps#wgraph_opts.marginheight,
 	Color = egd:color({211,211,211,1}),
 	Font = load_font("Helvetica20.wingsfont"),
 	Unit = round(math:pow(10,length(integer_to_list(MaxY))-1)),
@@ -226,8 +227,8 @@ add_silver_line([Height| Heights], [Label |Labels],Image, Const = [SBeginPoint, 
 	add_silver_line(Heights,Labels, Image, Const).	
 
 add_unit_label(Unit, Image, GraphOpt) ->
-	MW = GraphOpt#opts.marginwidth,
-	MH = GraphOpt#opts.marginheight,
+	MW = GraphOpt#wgraph_opts.marginwidth,
+	MH = GraphOpt#wgraph_opts.marginheight,
 	Color = egd:color(silver),
 	Font = load_font("Helvetica20.wingsfont"),
 	P = {round(MW / 2),MH-50},
