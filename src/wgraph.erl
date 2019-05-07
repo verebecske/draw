@@ -67,7 +67,7 @@ change_position(Data,GraphOpt) ->
 	%find_maxs(Data),
 	MinW = 0, 
 	MinH = 0,
-	Len = round(math:pow(10,length(integer_to_list(MaxH))-1)),
+	Len = round(math:pow(10,length(integer_to_list(floor(MaxH)))-1)),
 	Estimation = (floor(MaxH / Len)+1) * Len,
 	SW = new_value(LineWidth,MinW,MaxW),
 	SH = new_value(LineHeight,MinH,Estimation),
@@ -261,17 +261,19 @@ grid_lines(Image,GridLines,GraphOpt) ->
 	Len = length(integer_to_list(MaxY)),
 	Unit = case MaxY == round(math:pow(10,Len-1)) of
 		true -> round(math:pow(10,Len-2));
-		false -> round(math:pow(10,Len-1))
+		_ -> round(math:pow(10,Len-1))
 	end,
-	io:format("~n ~n Max: ~p ~n ~n Unit: ~p ~n ~n",[MaxY,Unit]),
-	Labels = lists:seq(0,MaxY,Unit),
+	Labels = case Unit of
+		0 -> lists:seq(0,MaxY);
+		_ -> lists:seq(0,MaxY,Unit)
+			end,
 	Color = egd:color(silver),
 	{_, GridPoints} = GridLines,
 	Font = load_font("Helvetica20.wingsfont"),
 	add_grid_lines(GridPoints,Image,Color,Labels,Font),
 	Image.
 
-%add_grid_lines(_,Image,_,[],_) -> Image;
+add_grid_lines(_,Image,_,[],_) -> Image;
 add_grid_lines([],Image,_,_,_) -> Image;
 add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) ->
 	StringLabel = integer_to_list(Label),
