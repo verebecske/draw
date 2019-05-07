@@ -5,21 +5,26 @@
 
 %transform data from wombat, add coord X and default values
 %return binary 
+-spec wombat_graph( [ { atom(), [number()] } ], [ [char()] ], [char()]) -> binary().
 wombat_graph(Data,Date,Unit) ->
 	NewData = add_parameter_X(Data,[]),
 	OptsMap = #{width => 800, height => 500, marginwidth => 80, marginheight => 90},
 	graph(NewData,Date,Unit,"wgraph.png",OptsMap).
 
+%it's important that number must be non-negative value!
+%that doesn't kill the program, just generate ungly picture
+-spec graph( [ {atom(), {number(),number()} } ], [ [char()] ], [char()], [char()], #wgraph_opts{}) -> binary().
 graph(Data,Labels,Unit,Filename,OptsMap) -> 
 	GraphOpt = create_options_record(OptsMap),
 	Image = create(GraphOpt),
-	{NewData,NewGraphOpt} = change_position(Data,GraphOpt),
-	create_silver_lines(Image, NewGraphOpt),
+	{[GridLines|NewData],NewGraphOpt} = change_position(Data,GraphOpt),
+	grid_lines(Image,GridLines,NewGraphOpt),
 	create_day_label(NewData, Labels, Image, NewGraphOpt),
 	add_unit_label(Unit,Image,NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
 	save(Image,Filename).
 
+-spec create_options_record(#wgraph_opts{}) -> #wgraph_opts{}.
 create_options_record(OptsMap) ->
 	#wgraph_opts{
 		numberOfLine = 0,
@@ -31,6 +36,7 @@ create_options_record(OptsMap) ->
 
 %it create the basic white image with the time and value axis
 %and add text "Wombat"
+-spec create(#wgraph_opts{}) -> pid().
 create(GraphOpt) ->
 	Width = GraphOpt#wgraph_opts.width,
 	Height = GraphOpt#wgraph_opts.height,
@@ -47,16 +53,22 @@ create(GraphOpt) ->
 	Image.
 
 %transform values to X and Y coordinate
+-spec change_position([{atom(), [{number(),number()}]} ], #wgraph_opts{}) -> {[{atom(), [{number(),number()}]} ], #wgraph_opts{}}.
 change_position(Data,GraphOpt) ->
 	MarginWidth = GraphOpt#wgraph_opts.marginwidth,
 	MarginHeight = GraphOpt#wgraph_opts.marginheight,
 	LineWidth = GraphOpt#wgraph_opts.width - (2 * MarginWidth),
 	LineHeight = GraphOpt#wgraph_opts.height - (2 * MarginHeight),
-	{MinW,MinH,MaxW,MaxH} = edges(Data),  
+	{_,_,MaxW,MaxH} = edges(Data),  
+	MinW = 0, 
+	MinH = 0,
 	Len = round(math:pow(10,length(integer_to_list(MaxH))-1)),
 	Estimation = (floor(MaxH / Len)+1) * Len,
 	SW = new_value(LineWidth,MinW,MaxW),
 	SH = new_value(LineHeight,MinH,Estimation),
+	Grids = lists:zipwith(fun(A,B) -> [A,B] end,
+			grid_list(Len,Estimation,MinW),grid_list(Len,Estimation,MaxW)),
+	GridLines = [{grid, lists:flatten(Grids)}],
 	NewData = lists:map( 
 		fun({Name,Points}) -> 
 			{Name, lists:map(
@@ -65,8 +77,14 @@ change_position(Data,GraphOpt) ->
 						NewH = mirroring((H * SH),LineHeight) + MarginHeight,
 						{trunc(NewW),trunc(NewH)}
 					end, Points)}
-		end, Data),	
+		end, GridLines ++ Data),	
 	{NewData,GraphOpt#wgraph_opts{maxValue = Estimation}}.
+
+grid_list(Len,Estimation,XValue) -> 
+	Ys = lists:seq(0,Estimation,Len),
+	Xs = lists:duplicate(length(Ys),XValue),
+	io:format("Ys: ~p",[Ys]),
+	lists:zip(Xs,Ys).
 
 new_value(L,Min,Max) ->
 	(L / (Max - Min)).
@@ -199,12 +217,35 @@ add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
 	add_day_label(LabelPoints, Date ,Image,Font,Color).
 
-create_silver_lines(Image,GraphOps) -> 
-	MaxY = GraphOps#wgraph_opts.maxValue,
-	Width = GraphOps#wgraph_opts.width,
-	Height = GraphOps#wgraph_opts.height,
-	MarginWidth = GraphOps#wgraph_opts.marginwidth,
-	MarginHeight = GraphOps#wgraph_opts.marginheight,
+grid_lines(Image,GridLines,GraphOpt) ->
+	MaxY = GraphOpt#wgraph_opts.maxValue,
+	Len = length(integer_to_list(MaxY)),
+	Unit = case MaxY == math:pow(10,Len-1) of
+		true -> round(math:pow(10,Len-2));
+		false -> round(math:pow(10,Len-1))
+	end,
+	Labels = lists:seq(0,MaxY,Unit),
+	Color = egd:color(silver),
+	{_, GridPoints} = GridLines,
+	Font = load_font("Helvetica20.wingsfont"),
+	add_grid_lines(GridPoints,Image,Color,Labels,Font),
+	Image.
+
+add_grid_lines(_,Image,_,[],_) -> Image;
+add_grid_lines([],Image,_,_,_) -> Image;
+add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) ->
+	StringLabel = integer_to_list(Label),
+	PT = {X - (length(StringLabel))* 10,Y - 15},
+	egd:line(Image,P0,P1,Color),
+	egd:text(Image, PT, Font, StringLabel, Color),
+	add_grid_lines(GridPoints,Image,Color,Labels,Font).
+
+create_silver_lines(Image,GraphOpts) -> 
+	MaxY = GraphOpts#wgraph_opts.maxValue,
+	Width = GraphOpts#wgraph_opts.width,
+	Height = GraphOpts#wgraph_opts.height,
+	MarginWidth = GraphOpts#wgraph_opts.marginwidth,
+	MarginHeight = GraphOpts#wgraph_opts.marginheight,
 	Color = egd:color({211,211,211,1}),
 	Font = load_font("Helvetica20.wingsfont"),
 	Unit = round(math:pow(10,length(integer_to_list(MaxY))-1)),
