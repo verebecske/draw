@@ -263,6 +263,7 @@ grid_lines(Image,GridLines,GraphOpt) ->
 		true -> round(math:pow(10,Len-2));
 		false -> round(math:pow(10,Len-1))
 	end,
+	io:format("~n ~n Max: ~p ~n ~n Unit: ~p ~n ~n",[MaxY,Unit]),
 	Labels = lists:seq(0,MaxY,Unit),
 	Color = egd:color(silver),
 	{_, GridPoints} = GridLines,
