@@ -1,4 +1,1 @@
-[{<<"egd">>,
-  {git,"git://github.com/erlang/egd.git",
-       {ref,"1cea959544de7dd40a3284ba571a58939de57616"}},
-  0}].
+[].
