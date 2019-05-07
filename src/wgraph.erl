@@ -2,6 +2,9 @@
 -export([wombat_graph/3, graph/5]).
 
 -record(wgraph_opts, {width,height,numberOfLine,marginwidth,marginheight,maxValue}).
+-type egd_image() :: pid().
+-type point() :: {non_neg_integer(), non_neg_integer()}.
+-type egd_color() :: {float(), float(), float(), float()}.
 
 %transform data from wombat, add coord X and default values
 %return binary 
@@ -13,13 +16,14 @@ wombat_graph(Data,Date,Unit) ->
 
 %it's important that number must be non-negative value!
 %that doesn't kill the program, just generate ungly picture
+%when all x and all y number is less that 0, it will be crash :(
 -spec graph( [ {atom(), {number(),number()} } ], [ [char()] ], [char()], [char()], #wgraph_opts{}) -> binary().
 graph(Data,Labels,Unit,Filename,OptsMap) -> 
 	GraphOpt = create_options_record(OptsMap),
 	Image = create(GraphOpt),
 	{[GridLines|NewData],NewGraphOpt} = change_position(Data,GraphOpt),
 	grid_lines(Image,GridLines,NewGraphOpt),
-	create_day_label(NewData, Labels, Image, NewGraphOpt),
+	create_x_labels(NewData, Labels, Image, NewGraphOpt),
 	add_unit_label(Unit,Image,NewGraphOpt),
 	add_lines(NewData,Image,NewGraphOpt),
 	save(Image,Filename).
@@ -60,6 +64,7 @@ change_position(Data,GraphOpt) ->
 	LineWidth = GraphOpt#wgraph_opts.width - (2 * MarginWidth),
 	LineHeight = GraphOpt#wgraph_opts.height - (2 * MarginHeight),
 	{_,_,MaxW,MaxH} = edges(Data),  
+	%find_maxs(Data),
 	MinW = 0, 
 	MinH = 0,
 	Len = round(math:pow(10,length(integer_to_list(MaxH))-1)),
@@ -80,15 +85,17 @@ change_position(Data,GraphOpt) ->
 		end, GridLines ++ Data),	
 	{NewData,GraphOpt#wgraph_opts{maxValue = Estimation}}.
 
+-spec grid_list(number(),number(),number()) -> [ {number(),number()} ].
 grid_list(Len,Estimation,XValue) -> 
 	Ys = lists:seq(0,Estimation,Len),
 	Xs = lists:duplicate(length(Ys),XValue),
-	io:format("Ys: ~p",[Ys]),
 	lists:zip(Xs,Ys).
 
-new_value(L,Min,Max) ->
-	(L / (Max - Min)).
+-spec new_value(number(),number(),number()) -> number().
+new_value(Line,Min,Max) ->
+	(Line / (Max - Min)).
 
+-spec mirroring(number(), number()) -> number().
 mirroring(Y, AY) ->
 	SymmetryAxis = trunc(AY/2),
 	case Y < SymmetryAxis of 
@@ -97,6 +104,7 @@ mirroring(Y, AY) ->
 	end.
 
 %find the minimal and maximal X and Y
+-spec edges([ {atom(), [{number(),number()}]} ]) -> {number(),number(),number(),number()}.
 edges(Data) ->
 	MaxW = 0,
 	MaxH = 0, 
@@ -133,15 +141,38 @@ acc(A,B) ->
 			}
 	end.
 
+find_maxs2(Data) -> 
+	Acc = lists:foldl(
+		fun({_,Points},{MW,MH}) -> 
+			{_,E} = lists:mapfoldl(
+				fun( {{W,H}, {MaxW,MaxH} }) ->
+					{{W,H}, { max(W,MaxW), max(H,MaxH)}}
+				end,{MW,MH},Points),
+			E
+		end,{0,0},Data),
+	Acc.
+
+find_maxs(Data) -> 
+	Acc = lists:foldl(
+		fun({_,Points},{MW,MH}) ->
+		 io:format("~n Ms: ~p",[{MW,MH}]),
+		 {_,Ms} = lists:mapfoldl(
+				fun( {{W,H}, {MaxW,MaxH} }) ->
+					{{W,H}, { max(W,MaxW), max(H,MaxH)}}
+				end,{MW,MH},Points),
+		 Ms
+		end,{0,0},Data),
+	Acc.
+
 add_lines([ {Name, Points} ],Image,GraphOpt) -> 
 	{Color,NewGraphOpt} = color(GraphOpt),
-	create_label(Name, Image, Color, NewGraphOpt),
+	create_graph_label(Name, Image, Color, NewGraphOpt),
 	create_line(Points,Image, Color),
 	Image;
 
 add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
 	{Color,NewGraphOpt} = color(GraphOpt),
-	create_label(Name, Image, Color,NewGraphOpt),
+	create_graph_label(Name, Image, Color,NewGraphOpt),
 	create_line(Points,Image, Color),
 	add_lines(Data,Image,NewGraphOpt).
 
@@ -150,7 +181,11 @@ create_line([P0,P1 | Points], Image, Color) ->
 	egd:line(Image,P0,P1,Color),
 	create_line([P1 | Points], Image, Color).
 
-create_label(Name,Image,Color,GraphOpt) -> 
+%if you use more than 3 graph, I offer that change X coordianate
+%the magical 4 constans is "split the picture 4 part",
+%and the number of line is different all graph, 1,2,3...
+-spec create_graph_label([char()],pid(),egd_color(),#wgraph_opts{}) -> pid().
+create_graph_label(Name,Image,Color,GraphOpt) -> 
 	Font = load_font("Terminus22.wingsfont"),
 	StringName = erlang:atom_to_list(Name),
 	H = GraphOpt#wgraph_opts.height,
@@ -164,8 +199,9 @@ create_label(Name,Image,Color,GraphOpt) ->
 	P1 = {X-10,Y+17},
 	egd:filledEllipse(Image,P0,P1,Color),
 	egd:text(Image, P, Font, StringName, Color),
-	ok. 
+	Image. 
 
+-spec create_wombat_label(pid(),#wgraph_opts{}) -> pid().
 create_wombat_label(Image,GraphOpt) ->
 	P = {GraphOpt#wgraph_opts.width - 100, 15},
 	Color = egd:color({58,135,189}),
@@ -174,6 +210,7 @@ create_wombat_label(Image,GraphOpt) ->
 	egd:text(Image, P, Font, StringName, Color),
 	Image.
 
+-spec save(pid(),[char()]) -> binary().
 save(Image,Filename) ->
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
 	file:write_file(Filename,Png),
@@ -200,23 +237,25 @@ load_font(Font) ->
             egd_font:load_binary(FontBinary)
     end.
 
-create_day_label(Data, Date, Image, GraphOpt) -> 
+%the most length datalist's x points use for the label
+create_x_labels(Data, Date, Image, GraphOpt) -> 
 	Points = element(2,lists:max(lists:map( fun({_,Datas}) -> {length(Datas),Datas} end, Data))),
  	LabelPoints = lists:map(fun({X,_}) ->
  		{X - 15, (GraphOpt#wgraph_opts.height - GraphOpt#wgraph_opts.marginheight)}
  	end,Points),
  	Color = egd:color(silver),
  	Font = load_font("Helvetica20.wingsfont"),
- 	add_day_label(LabelPoints,Date,Image,Font,Color).	
+ 	add_x_label(LabelPoints,Date,Image,Font,Color).	
 
-add_day_label([],_,Image,_,_) -> 
+add_x_label([],_,Image,_,_) -> 
 	Image;
-add_day_label(_,[],Image,_,_) ->
+add_x_label(_,[],Image,_,_) ->
 	Image;
-add_day_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
+add_x_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
-	add_day_label(LabelPoints, Date ,Image,Font,Color).
+	add_x_label(LabelPoints, Date ,Image,Font,Color).
 
+-spec grid_lines(pid(),[{number(),number()}], #wgraph_opts{}) -> pid().
 grid_lines(Image,GridLines,GraphOpt) ->
 	MaxY = GraphOpt#wgraph_opts.maxValue,
 	Len = length(integer_to_list(MaxY)),
@@ -231,7 +270,7 @@ grid_lines(Image,GridLines,GraphOpt) ->
 	add_grid_lines(GridPoints,Image,Color,Labels,Font),
 	Image.
 
-add_grid_lines(_,Image,_,[],_) -> Image;
+%add_grid_lines(_,Image,_,[],_) -> Image;
 add_grid_lines([],Image,_,_,_) -> Image;
 add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) ->
 	StringLabel = integer_to_list(Label),
@@ -240,42 +279,17 @@ add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) 
 	egd:text(Image, PT, Font, StringLabel, Color),
 	add_grid_lines(GridPoints,Image,Color,Labels,Font).
 
-create_silver_lines(Image,GraphOpts) -> 
-	MaxY = GraphOpts#wgraph_opts.maxValue,
-	Width = GraphOpts#wgraph_opts.width,
-	Height = GraphOpts#wgraph_opts.height,
-	MarginWidth = GraphOpts#wgraph_opts.marginwidth,
-	MarginHeight = GraphOpts#wgraph_opts.marginheight,
-	Color = egd:color({211,211,211,1}),
-	Font = load_font("Helvetica20.wingsfont"),
-	Unit = round(math:pow(10,length(integer_to_list(MaxY))-1)),
-	LineCount = floor(MaxY / Unit), 
-	LineDistance = floor((Height - 2 * MarginHeight) / LineCount),
-	Labels = lists:seq(0,MaxY,Unit),
-	Heights = lists:seq(Height-MarginHeight,MarginHeight,-LineDistance),
-	add_silver_line(Heights,Labels,Image,[MarginWidth,Width-MarginWidth,Color,Font]).
-
-add_silver_line([], _, Image, _) -> 
-	Image;
-
-add_silver_line([Height| Heights], [Label |Labels],Image, Const = [SBeginPoint, SEndPoint, Color, Font]) ->
-	StringLabel = integer_to_list(Label),
-	StringName = integer_to_list(Label),
-	P0 = {SBeginPoint - (length(StringLabel))* 10,Height - 15},
-	P1 = {SBeginPoint, Height},
-	P2 = {SEndPoint, Height},
-	egd:text(Image, P0, Font, StringName, Color),
-	egd:line(Image,P1,P2,Color),
-	add_silver_line(Heights,Labels, Image, Const).	
-
+-spec add_unit_label([char()], pid(), #wgraph_opts{}) -> pid().
 add_unit_label(Unit, Image, GraphOpt) ->
 	MW = GraphOpt#wgraph_opts.marginwidth,
 	MH = GraphOpt#wgraph_opts.marginheight,
 	Color = egd:color(silver),
 	Font = load_font("Helvetica20.wingsfont"),
 	P = {round(MW / 2),MH-50},
-	egd:text(Image, P, Font, Unit, Color).
+	egd:text(Image, P, Font, Unit, Color),
+	Image.
 
+% -spec add_parameter_X([{atom(), [number()]}],[{atom(),[{number(),number()}]}]) -> [{number(),number()}]}].
 add_parameter_X([],NewList) ->
 	NewList;
 add_parameter_X([{Label,List} | Rest], ListWithX) ->

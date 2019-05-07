@@ -1,6 +1,6 @@
--sname draw
+-sname wgraph
 
--setcookie draw_cookie
+-setcookie wgraph_cookie
 
 +K true
 +A30
