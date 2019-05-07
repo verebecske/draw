@@ -229,11 +229,11 @@ color(GraphOpt) ->
 	{egd:color(Color),GraphOpt#wgraph_opts{numberOfLine = Number + 1}}.  
 
 load_font(Font) ->
-    case erl_prim_loader:get_file(filename:join([code:priv_dir(draw),"fonts",Font])) of
+    case erl_prim_loader:get_file(filename:join([code:priv_dir(wgraph),"fonts",Font])) of
         {ok,FontBinary,_} ->
             egd_font:load_binary(FontBinary);
         _ ->
-            {ok,FontBinary,_} = erl_prim_loader:get_file(filename:join([code:priv_dir(draw),"draw/priv/fonts",Font])),
+            {ok,FontBinary,_} = erl_prim_loader:get_file(filename:join([code:priv_dir(wgraph),"wgraph/priv/fonts",Font])),
             egd_font:load_binary(FontBinary)
     end.
 
