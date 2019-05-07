@@ -259,7 +259,7 @@ add_x_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 grid_lines(Image,GridLines,GraphOpt) ->
 	MaxY = GraphOpt#wgraph_opts.maxValue,
 	Len = length(integer_to_list(MaxY)),
-	Unit = case MaxY == math:pow(10,Len-1) of
+	Unit = case MaxY == ound(math:pow(10,Len-1)) of
 		true -> round(math:pow(10,Len-2));
 		false -> round(math:pow(10,Len-1))
 	end,
