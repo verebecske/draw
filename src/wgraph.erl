@@ -80,7 +80,6 @@ change_position(Data,GraphOpt) ->
 	MarginHeight = GraphOpt#wgraph_opts.marginheight,
 	LineWidth = GraphOpt#wgraph_opts.width - (2 * MarginWidth),
 	LineHeight = GraphOpt#wgraph_opts.height - (2 * MarginHeight),
-	%{_,_,MaxW,MaxH} = edges(Data),  
 	{MaxW, MaxH} = find_maxs(Data),
 	MinW = 0, 
 	MinH = 0,
@@ -121,44 +120,6 @@ mirroring(Y, AY) ->
 		true -> Y - 2 * (Y - SymmetryAxis);
 		false -> Y + 2 * (SymmetryAxis - Y)
 	end.
-
-%find the minimal and maximal X and Y
-% -spec edges([ {atom(), [{number(),number()}]} ]) -> {number(),number(),number(),number()}.
-% edges(Data) ->
-% 	MaxW = 0,
-% 	MaxH = 0, 
-% 	{_, DataPoints} = hd(Data),
-% 	{MinH,MinW} = hd(DataPoints),
-% 	Edges = {MinW,MinH,MaxW,MaxH},
-% 	{_,Acc} = lists:mapfoldl(
-% 			fun({Name,Points},NewEdges) -> 
-% 				NewAcc = find_acc(Points,NewEdges),
-% 				{{ Name, NewAcc},
-% 				acc(NewEdges, NewAcc)}
-% 			end, Edges, Data),
-% 	Acc.
-
-% find_acc(Points,Edges) ->
-% 	{MinW,MinH,MaxW,MaxH} = Edges,
-% 	{_,Acc} = 
-% 	lists:mapfoldl(
-% 		fun(A,B) ->
-% 			{A, acc(A,B)}
-% 		end, {MinW,MinH,MaxW,MaxH},Points),
-% 	Acc.
-
-% acc(A,B) ->
-% 	{MinW,MinH,MaxW,MaxH} = B,
-% 	case A of
-% 		{W,H} -> acc({W,H,W,H},B);
-% 		{OMinW,OMinH,OMaxW,OMaxH} -> 
-% 			{
-% 				erlang:min(OMinW,MinW),
-% 				erlang:min(OMinH,MinH),
-% 				erlang:max(OMaxW,MaxW),
-% 				erlang:max(OMaxH,MaxH) 
-% 			}
-% 	end.
 
 %%------------------------------------------------------------------------------
 %% @doc Find the maximum values in Data.	
