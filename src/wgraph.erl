@@ -164,15 +164,15 @@ mirroring(Y, AY) ->
 %% @doc Find the maximum values in Data.	
 %% @end
 %%------------------------------------------------------------------------------
+-spec find_maxs([{atom(),[{number(),number()}]}]) -> {number(),number()}.
 find_maxs(Data) -> 
-	Acc = lists:foldl(
+	lists:foldl(
 		fun({_,Points},{MW,MH}) ->
 		  lists:foldl(
 			 	fun( {W,H}, {MaxW,MaxH} ) ->
 			 		{ max(W,MaxW), max(H,MaxH)}
 			 	end,{MW,MH},Points)
-		end,{0,0},Data),
-	Acc.
+		end,{0,0},Data).
 
 %%------------------------------------------------------------------------------
 %% @doc It generate the X and Y coordinate for the girds.	
@@ -188,6 +188,7 @@ grid_list(Len,Estimation,XValue) ->
 %% @doc  Add gaphs' lines and labels.		
 %% @end
 %%------------------------------------------------------------------------------
+-spec add_lines([{atom(),[point()]}], egd_image(),#wgraph_opts{}) -> egd_image().
 add_lines([ {Name, Points} ],Image,GraphOpt) -> 
 	{Color,NewGraphOpt} = color(GraphOpt),
 	create_graph_label(Name, Image, Color, NewGraphOpt),
@@ -200,6 +201,7 @@ add_lines([ {Name, Points} | Data],Image,GraphOpt) ->
 	create_line(Points,Image, Color),
 	add_lines(Data,Image,NewGraphOpt).
 
+-spec create_line([point()], egd_image(),egd_color()) -> egd_image().
 create_line([_],Image, _) -> Image;
 create_line([P0,P1 | Points], Image, Color) ->
 	egd:line(Image,P0,P1,Color),
@@ -296,9 +298,9 @@ add_x_label([],_,Image,_,_) ->
 	Image;
 add_x_label(_,[],Image,_,_) ->
 	Image;
-add_x_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
+add_x_label([P | LabelPoints],[StringName | Strings],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
-	add_x_label(LabelPoints, Date ,Image,Font,Color).
+	add_x_label(LabelPoints, Strings,Image,Font,Color).
 
 %%------------------------------------------------------------------------------
 %% @doc It create the grid lines. 	
