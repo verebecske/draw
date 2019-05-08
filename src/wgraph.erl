@@ -18,9 +18,8 @@ wombat_graph(Data,Date,Unit) ->
 	graph(NewData,Date,Unit,"wgraph.png",OptsMap).
 
 %%------------------------------------------------------------------------------
-%% @doc Transform the data, draw the image and save it.
-%% 		It's important that number must be non-negative value!
-%%		that doesn't kill the program, just generate ungly picture.
+%% @doc Transforms the data, draws the image and saves it.
+%% 		It's important that values must be non-negative!
 %% @end
 %%------------------------------------------------------------------------------
 -spec graph( [ {atom(), {number(),number()} } ], [string()], string(), string(), #wgraph_opts{}) -> binary().
@@ -35,7 +34,7 @@ graph(Data,Labels,Unit,Filename,OptsMap) ->
 	save(Image,Filename).
 
 %%------------------------------------------------------------------------------
-%% @doc Create options record, and add default values.
+%% @doc Create an options record with default values.
 %% @end
 %%------------------------------------------------------------------------------
 -spec create_options_record(#wgraph_opts{}) -> #wgraph_opts{}.
@@ -49,8 +48,8 @@ create_options_record(OptsMap) ->
 		}.
 
 %%------------------------------------------------------------------------------
-%% @doc It create the basic white image with the time and value axis, 
-%% 		and add text "Wombat". See doc/just_create.png
+%% @doc It creates the basic white image with the time and value axis, 
+%% 		and adds the label "Wombat". See doc/just_create.png
 %% @end
 %%------------------------------------------------------------------------------
 -spec create(#wgraph_opts{}) -> egd_image().
@@ -70,7 +69,7 @@ create(GraphOpt) ->
 	Image.
 
 %%------------------------------------------------------------------------------
-%% @doc Transform values to X and Y coordinate.
+%% @doc Transform values to X and Y coordinates.
 %% @end
 %%------------------------------------------------------------------------------
 -spec change_position([{atom(), [{number(),number()}]} ], #wgraph_opts{}) -> 
@@ -109,7 +108,7 @@ new_value(Line,Min,Max) ->
 	end.
 
 %%------------------------------------------------------------------------------
-%% @doc Mirroring the Y axis, because egd(0,0) not equal wgraph's data (0,0)
+%% @doc Mirrors the Y axis, because egd(0,0) doesn't equal wgraph's data (0,0)
 %% 		See in doc/just_create.png
 %% @end
 %%------------------------------------------------------------------------------
@@ -136,7 +135,7 @@ find_maxs(Data) ->
 		end,{0,0},Data).
 
 %%------------------------------------------------------------------------------
-%% @doc It generate the X and Y coordinate for the girds.	
+%% @doc It generates the X and Y coordinates for the girds.	
 %% @end
 %%------------------------------------------------------------------------------
 -spec grid_list(number(),number(),number()) -> [ {number(),number()} ].
@@ -146,7 +145,7 @@ grid_list(Len,Estimation,XValue) ->
 	lists:zip(Xs,Ys).
 
 %%------------------------------------------------------------------------------
-%% @doc  Add gaphs' lines and labels.		
+%% @doc  Add graphs' lines and legend.		
 %% @end
 %%------------------------------------------------------------------------------
 -spec add_lines([{atom(),[point()]}], egd_image(),#wgraph_opts{}) -> egd_image().
@@ -169,9 +168,7 @@ create_line([P0,P1 | Points], Image, Color) ->
 	create_line([P1 | Points], Image, Color).
 
 %%------------------------------------------------------------------------------
-%% @doc If you use more than 3 graph, I offer that change X coordianate
-%%		the magical 4 constans is "split the picture 4 part",
-%%		and the number of line is different all graph, 1,2,3...
+%% @doc It doesn't work with more than 3 labels.
 %% @end
 %%------------------------------------------------------------------------------
 -spec create_graph_label([char()],pid(),egd_color(),#wgraph_opts{}) -> egd_image().
@@ -183,7 +180,7 @@ create_graph_label(Name,Image,Color,GraphOpt) ->
 	W = GraphOpt#wgraph_opts.width,
 	N = GraphOpt#wgraph_opts.numberOfLine,
 	Y = H - trunc(MH / 2),
-	X = (trunc(W / 4) * N) - 100,
+	X = (trunc(W / 4) * N) - 100, % mod
 	P = {X,Y},
 	P0 = {X-5,Y+12},
 	P1 = {X-10,Y+17},
@@ -192,7 +189,7 @@ create_graph_label(Name,Image,Color,GraphOpt) ->
 	Image. 
 
 %%------------------------------------------------------------------------------
-%% @doc Create wombat label. In doc/points.png can you see the point P.
+%% @doc Create wombat label. See the point P in doc/points.png.
 %% @end
 %%------------------------------------------------------------------------------
 -spec create_wombat_label(egd_image(),#wgraph_opts{}) -> egd_image().
@@ -205,7 +202,7 @@ create_wombat_label(Image,GraphOpt) ->
 	Image.
 
 %%------------------------------------------------------------------------------
-%% @doc It render the image and save it. Return binary. 
+%% @doc It renders the image and saves it. Returns binary. 
 %% @end
 %%------------------------------------------------------------------------------
 -spec save(egd_image(),string()) -> binary().
@@ -216,8 +213,8 @@ save(Image,Filename) ->
     Png.
 
 %%------------------------------------------------------------------------------
-%% @doc It choose the color of lines, it garantee the all lines
-%% 		(if you use just 4) are different color. 
+%% @doc It chooses the color of the lines, it guarantees that all the lines
+%% 		(if you use just 4) have different color. 
 %% @end
 %%------------------------------------------------------------------------------
 -spec color(#wgraph_opts{}) -> {egd_color(),#wgraph_opts{}}.
@@ -242,8 +239,8 @@ load_font(Font) ->
     end.
 
 %%------------------------------------------------------------------------------
-%% @doc It create the labels under X axis. It use the most length 
-%% 		datalist's x points. It can you see in doc/points.png
+%% @doc Create the labels under the X axis. It uses the x coordinates from
+%% 		the longest datalist. It can you see in doc/points.png
 %% @end
 %%------------------------------------------------------------------------------
 create_x_labels(Data, Date, Image, GraphOpt) -> 
@@ -264,7 +261,7 @@ add_x_label([P | LabelPoints],[StringName | Strings],Image,Font,Color) ->
 	add_x_label(LabelPoints, Strings,Image,Font,Color).
 
 %%------------------------------------------------------------------------------
-%% @doc It create the grid lines. 	
+%% @doc Create the grid lines. 	
 %% @end
 %%------------------------------------------------------------------------------
 -spec grid_lines(egd_image(),[{number(),number()}], #wgraph_opts{}) -> egd_image().
@@ -286,7 +283,7 @@ grid_lines(Image,GridLines,GraphOpt) ->
 	Image.
 
 %%------------------------------------------------------------------------------
-%% @doc  I use the Label length because the PT is in the begin of the text.
+%% @doc  I use the Label length because the PT is at the begining of the text.
 %%		 Just like the create_wombat_label/2, see in doc/points.png	
 %% @end
 %%------------------------------------------------------------------------------
@@ -300,7 +297,7 @@ add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) 
 	add_grid_lines(GridPoints,Image,Color,Labels,Font).
 
 %%------------------------------------------------------------------------------
-%% @doc Add unit label. 	
+%% @doc Add unit label. See doc/basic.png
 %% @end
 %%------------------------------------------------------------------------------
 -spec add_unit_label([char()], egd_image(), #wgraph_opts{}) -> egd_image().
@@ -314,8 +311,8 @@ add_unit_label(Unit, Image, GraphOpt) ->
 	Image.
 
 %%------------------------------------------------------------------------------
-%% @doc It transform a list of values to list of {n,values}, where n is a 
-%% 		non-negative integer.
+%% @doc It transforms a list of values to list of {n,values}, where n is a 
+%% 	monotonically increasing non-negative integer.
 %% @end
 %%------------------------------------------------------------------------------
 -spec add_parameter_X([{atom(), [number()]}],[{atom(),[{number(),number()}]}]) -> 
