@@ -6,18 +6,24 @@
 -type point() :: {non_neg_integer(), non_neg_integer()}.
 -type egd_color() :: {float(), float(), float(), float()}.
 
-%transform data from wombat, add coord X and default values
-%return binary 
--spec wombat_graph( [ { atom(), [number()] } ], [ [char()] ], [char()]) -> binary().
+%%------------------------------------------------------------------------------
+%% @doc Transform data from wombat, add coord X and default values.
+%% 		Return binary.
+%% @end
+%%------------------------------------------------------------------------------
+-spec wombat_graph( [{ atom(), [number()] }], [string()], string()) -> binary().
 wombat_graph(Data,Date,Unit) ->
 	NewData = add_parameter_X(Data,[]),
 	OptsMap = #{width => 800, height => 500, marginwidth => 80, marginheight => 90},
 	graph(NewData,Date,Unit,"wgraph.png",OptsMap).
 
-%it's important that number must be non-negative value!
-%that doesn't kill the program, just generate ungly picture
-%when all x and all y number is less that 0, it will be crash :(
--spec graph( [ {atom(), {number(),number()} } ], [ [char()] ], [char()], [char()], #wgraph_opts{}) -> binary().
+%%------------------------------------------------------------------------------
+%% @doc Transform the data, draw the image and save it.
+%% 		It's important that number must be non-negative value!
+%%		that doesn't kill the program, just generate ungly picture.
+%% @end
+%%------------------------------------------------------------------------------
+-spec graph( [ {atom(), {number(),number()} } ], [string()], string(), string(), #wgraph_opts{}) -> binary().
 graph(Data,Labels,Unit,Filename,OptsMap) -> 
 	GraphOpt = create_options_record(OptsMap),
 	Image = create(GraphOpt),
@@ -28,6 +34,10 @@ graph(Data,Labels,Unit,Filename,OptsMap) ->
 	add_lines(NewData,Image,NewGraphOpt),
 	save(Image,Filename).
 
+%%------------------------------------------------------------------------------
+%% @doc Create options record, and add default values.
+%% @end
+%%------------------------------------------------------------------------------
 -spec create_options_record(#wgraph_opts{}) -> #wgraph_opts{}.
 create_options_record(OptsMap) ->
 	#wgraph_opts{
@@ -38,9 +48,12 @@ create_options_record(OptsMap) ->
 		marginheight = maps:get(marginheight,OptsMap)
 		}.
 
-%it create the basic white image with the time and value axis
-%and add text "Wombat"
--spec create(#wgraph_opts{}) -> pid().
+%%------------------------------------------------------------------------------
+%% @doc It create the basic white image with the time and value axis, 
+%% 		and add text "Wombat". See doc/just_create.png
+%% @end
+%%------------------------------------------------------------------------------
+-spec create(#wgraph_opts{}) -> egd_image().
 create(GraphOpt) ->
 	Width = GraphOpt#wgraph_opts.width,
 	Height = GraphOpt#wgraph_opts.height,
@@ -56,15 +69,19 @@ create(GraphOpt) ->
 	create_wombat_label(Image,GraphOpt),
 	Image.
 
-%transform values to X and Y coordinate
--spec change_position([{atom(), [{number(),number()}]} ], #wgraph_opts{}) -> {[{atom(), [{number(),number()}]} ], #wgraph_opts{}}.
+%%------------------------------------------------------------------------------
+%% @doc Transform values to X and Y coordinate.
+%% @end
+%%------------------------------------------------------------------------------
+-spec change_position([{atom(), [{number(),number()}]} ], #wgraph_opts{}) -> 
+		{[{atom(), [{number(),number()}]} ], #wgraph_opts{}}.
 change_position(Data,GraphOpt) ->
 	MarginWidth = GraphOpt#wgraph_opts.marginwidth,
 	MarginHeight = GraphOpt#wgraph_opts.marginheight,
 	LineWidth = GraphOpt#wgraph_opts.width - (2 * MarginWidth),
 	LineHeight = GraphOpt#wgraph_opts.height - (2 * MarginHeight),
-	{_,_,MaxW,MaxH} = edges(Data),  
-	%find_maxs(Data),
+	%{_,_,MaxW,MaxH} = edges(Data),  
+	{MaxW, MaxH} = find_maxs(Data),
 	MinW = 0, 
 	MinH = 0,
 	Len = round(math:pow(10,length(integer_to_list(floor(MaxH)))-1)),
@@ -85,16 +102,18 @@ change_position(Data,GraphOpt) ->
 		end, GridLines ++ Data),	
 	{NewData,GraphOpt#wgraph_opts{maxValue = Estimation}}.
 
--spec grid_list(number(),number(),number()) -> [ {number(),number()} ].
-grid_list(Len,Estimation,XValue) -> 
-	Ys = lists:seq(0,Estimation,Len),
-	Xs = lists:duplicate(length(Ys),XValue),
-	lists:zip(Xs,Ys).
-
 -spec new_value(number(),number(),number()) -> number().
 new_value(Line,Min,Max) ->
-	(Line / (Max - Min)).
+	case (Max - Min) of
+		0 -> Line;
+		_ ->(Line / (Max - Min))
+	end.
 
+%%------------------------------------------------------------------------------
+%% @doc Mirroring the Y axis, because egd(0,0) not equal wgraph's data (0,0)
+%% 		See in doc/just_create.png
+%% @end
+%%------------------------------------------------------------------------------
 -spec mirroring(number(), number()) -> number().
 mirroring(Y, AY) ->
 	SymmetryAxis = trunc(AY/2),
@@ -104,66 +123,71 @@ mirroring(Y, AY) ->
 	end.
 
 %find the minimal and maximal X and Y
--spec edges([ {atom(), [{number(),number()}]} ]) -> {number(),number(),number(),number()}.
-edges(Data) ->
-	MaxW = 0,
-	MaxH = 0, 
-	{_, DataPoints} = hd(Data),
-	{MinH,MinW} = hd(DataPoints),
-	Edges = {MinW,MinH,MaxW,MaxH},
-	{_,Acc} = lists:mapfoldl(
-			fun({Name,Points},NewEdges) -> 
-				NewAcc = find_acc(Points,NewEdges),
-				{{ Name, NewAcc},
-				acc(NewEdges, NewAcc)}
-			end, Edges, Data),
-	Acc.
+% -spec edges([ {atom(), [{number(),number()}]} ]) -> {number(),number(),number(),number()}.
+% edges(Data) ->
+% 	MaxW = 0,
+% 	MaxH = 0, 
+% 	{_, DataPoints} = hd(Data),
+% 	{MinH,MinW} = hd(DataPoints),
+% 	Edges = {MinW,MinH,MaxW,MaxH},
+% 	{_,Acc} = lists:mapfoldl(
+% 			fun({Name,Points},NewEdges) -> 
+% 				NewAcc = find_acc(Points,NewEdges),
+% 				{{ Name, NewAcc},
+% 				acc(NewEdges, NewAcc)}
+% 			end, Edges, Data),
+% 	Acc.
 
-find_acc(Points,Edges) ->
-	{MinW,MinH,MaxW,MaxH} = Edges,
-	{_,Acc} = 
-	lists:mapfoldl(
-		fun(A,B) ->
-			{A, acc(A,B)}
-		end, {MinW,MinH,MaxW,MaxH},Points),
-	Acc.
+% find_acc(Points,Edges) ->
+% 	{MinW,MinH,MaxW,MaxH} = Edges,
+% 	{_,Acc} = 
+% 	lists:mapfoldl(
+% 		fun(A,B) ->
+% 			{A, acc(A,B)}
+% 		end, {MinW,MinH,MaxW,MaxH},Points),
+% 	Acc.
 
-acc(A,B) ->
-	{MinW,MinH,MaxW,MaxH} = B,
-	case A of
-		{W,H} -> acc({W,H,W,H},B);
-		{OMinW,OMinH,OMaxW,OMaxH} -> 
-			{
-				erlang:min(OMinW,MinW),
-				erlang:min(OMinH,MinH),
-				erlang:max(OMaxW,MaxW),
-				erlang:max(OMaxH,MaxH) 
-			}
-	end.
+% acc(A,B) ->
+% 	{MinW,MinH,MaxW,MaxH} = B,
+% 	case A of
+% 		{W,H} -> acc({W,H,W,H},B);
+% 		{OMinW,OMinH,OMaxW,OMaxH} -> 
+% 			{
+% 				erlang:min(OMinW,MinW),
+% 				erlang:min(OMinH,MinH),
+% 				erlang:max(OMaxW,MaxW),
+% 				erlang:max(OMaxH,MaxH) 
+% 			}
+% 	end.
 
-find_maxs2(Data) -> 
-	Acc = lists:foldl(
-		fun({_,Points},{MW,MH}) -> 
-			{_,E} = lists:mapfoldl(
-				fun( {{W,H}, {MaxW,MaxH} }) ->
-					{{W,H}, { max(W,MaxW), max(H,MaxH)}}
-				end,{MW,MH},Points),
-			E
-		end,{0,0},Data),
-	Acc.
-
+%%------------------------------------------------------------------------------
+%% @doc Find the maximum values in Data.	
+%% @end
+%%------------------------------------------------------------------------------
 find_maxs(Data) -> 
 	Acc = lists:foldl(
 		fun({_,Points},{MW,MH}) ->
-		 io:format("~n Ms: ~p",[{MW,MH}]),
-		 {_,Ms} = lists:mapfoldl(
-				fun( {{W,H}, {MaxW,MaxH} }) ->
-					{{W,H}, { max(W,MaxW), max(H,MaxH)}}
-				end,{MW,MH},Points),
-		 Ms
+		  lists:foldl(
+			 	fun( {W,H}, {MaxW,MaxH} ) ->
+			 		{ max(W,MaxW), max(H,MaxH)}
+			 	end,{MW,MH},Points)
 		end,{0,0},Data),
 	Acc.
 
+%%------------------------------------------------------------------------------
+%% @doc It generate the X and Y coordinate for the girds.	
+%% @end
+%%------------------------------------------------------------------------------
+-spec grid_list(number(),number(),number()) -> [ {number(),number()} ].
+grid_list(Len,Estimation,XValue) -> 
+	Ys = lists:seq(0,Estimation,Len),
+	Xs = lists:duplicate(length(Ys),XValue),
+	lists:zip(Xs,Ys).
+
+%%------------------------------------------------------------------------------
+%% @doc  Add gaphs' lines and labels.		
+%% @end
+%%------------------------------------------------------------------------------
 add_lines([ {Name, Points} ],Image,GraphOpt) -> 
 	{Color,NewGraphOpt} = color(GraphOpt),
 	create_graph_label(Name, Image, Color, NewGraphOpt),
@@ -181,10 +205,13 @@ create_line([P0,P1 | Points], Image, Color) ->
 	egd:line(Image,P0,P1,Color),
 	create_line([P1 | Points], Image, Color).
 
-%if you use more than 3 graph, I offer that change X coordianate
-%the magical 4 constans is "split the picture 4 part",
-%and the number of line is different all graph, 1,2,3...
--spec create_graph_label([char()],pid(),egd_color(),#wgraph_opts{}) -> pid().
+%%------------------------------------------------------------------------------
+%% @doc If you use more than 3 graph, I offer that change X coordianate
+%%		the magical 4 constans is "split the picture 4 part",
+%%		and the number of line is different all graph, 1,2,3...
+%% @end
+%%------------------------------------------------------------------------------
+-spec create_graph_label([char()],pid(),egd_color(),#wgraph_opts{}) -> egd_image().
 create_graph_label(Name,Image,Color,GraphOpt) -> 
 	Font = load_font("Terminus22.wingsfont"),
 	StringName = erlang:atom_to_list(Name),
@@ -201,7 +228,11 @@ create_graph_label(Name,Image,Color,GraphOpt) ->
 	egd:text(Image, P, Font, StringName, Color),
 	Image. 
 
--spec create_wombat_label(pid(),#wgraph_opts{}) -> pid().
+%%------------------------------------------------------------------------------
+%% @doc Create wombat label. In doc/points.png can you see the point P.
+%% @end
+%%------------------------------------------------------------------------------
+-spec create_wombat_label(egd_image(),#wgraph_opts{}) -> egd_image().
 create_wombat_label(Image,GraphOpt) ->
 	P = {GraphOpt#wgraph_opts.width - 100, 15},
 	Color = egd:color({58,135,189}),
@@ -210,13 +241,23 @@ create_wombat_label(Image,GraphOpt) ->
 	egd:text(Image, P, Font, StringName, Color),
 	Image.
 
--spec save(pid(),[char()]) -> binary().
+%%------------------------------------------------------------------------------
+%% @doc It render the image and save it. Return binary. 
+%% @end
+%%------------------------------------------------------------------------------
+-spec save(egd_image(),string()) -> binary().
 save(Image,Filename) ->
 	Png = egd:render(Image, png, [{render_engine, opaque}]),
 	file:write_file(Filename,Png),
     egd:destroy(Image),
     Png.
 
+%%------------------------------------------------------------------------------
+%% @doc It choose the color of lines, it garantee the all lines
+%% 		(if you use just 4) are different color. 
+%% @end
+%%------------------------------------------------------------------------------
+-spec color(#wgraph_opts{}) -> {egd_color(),#wgraph_opts{}}.
 color(GraphOpt) ->  
 	Number = GraphOpt#wgraph_opts.numberOfLine,
 	Color = 
@@ -237,12 +278,16 @@ load_font(Font) ->
             egd_font:load_binary(FontBinary)
     end.
 
-%the most length datalist's x points use for the label
+%%------------------------------------------------------------------------------
+%% @doc It create the labels under X axis. It use the most length 
+%% 		datalist's x points. It can you see in doc/points.png
+%% @end
+%%------------------------------------------------------------------------------
 create_x_labels(Data, Date, Image, GraphOpt) -> 
-	Points = element(2,lists:max(lists:map( fun({_,Datas}) -> {length(Datas),Datas} end, Data))),
+	Points = element(2,lists:max(lists:map(fun({_,Datas}) -> {length(Datas),Datas} end,Data))),
  	LabelPoints = lists:map(fun({X,_}) ->
  		{X - 15, (GraphOpt#wgraph_opts.height - GraphOpt#wgraph_opts.marginheight)}
- 	end,Points),
+ 							end,Points),
  	Color = egd:color(silver),
  	Font = load_font("Helvetica20.wingsfont"),
  	add_x_label(LabelPoints,Date,Image,Font,Color).	
@@ -255,7 +300,11 @@ add_x_label([P | LabelPoints],[StringName | Date],Image,Font,Color) ->
 	egd:text(Image, P, Font, StringName, Color),
 	add_x_label(LabelPoints, Date ,Image,Font,Color).
 
--spec grid_lines(pid(),[{number(),number()}], #wgraph_opts{}) -> pid().
+%%------------------------------------------------------------------------------
+%% @doc It create the grid lines. 	
+%% @end
+%%------------------------------------------------------------------------------
+-spec grid_lines(egd_image(),[{number(),number()}], #wgraph_opts{}) -> egd_image().
 grid_lines(Image,GridLines,GraphOpt) ->
 	MaxY = GraphOpt#wgraph_opts.maxValue,
 	Len = length(integer_to_list(MaxY)),
@@ -273,6 +322,11 @@ grid_lines(Image,GridLines,GraphOpt) ->
 	add_grid_lines(GridPoints,Image,Color,Labels,Font),
 	Image.
 
+%%------------------------------------------------------------------------------
+%% @doc  I use the Label length because the PT is in the begin of the text.
+%%		 Just like the create_wombat_label/2, see in doc/points.png	
+%% @end
+%%------------------------------------------------------------------------------
 add_grid_lines(_,Image,_,[],_) -> Image;
 add_grid_lines([],Image,_,_,_) -> Image;
 add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) ->
@@ -282,7 +336,11 @@ add_grid_lines([ {X,Y} = P0,P1 | GridPoints],Image,Color,[Label | Labels],Font) 
 	egd:text(Image, PT, Font, StringLabel, Color),
 	add_grid_lines(GridPoints,Image,Color,Labels,Font).
 
--spec add_unit_label([char()], pid(), #wgraph_opts{}) -> pid().
+%%------------------------------------------------------------------------------
+%% @doc Add unit label. 	
+%% @end
+%%------------------------------------------------------------------------------
+-spec add_unit_label([char()], egd_image(), #wgraph_opts{}) -> egd_image().
 add_unit_label(Unit, Image, GraphOpt) ->
 	MW = GraphOpt#wgraph_opts.marginwidth,
 	MH = GraphOpt#wgraph_opts.marginheight,
@@ -292,7 +350,13 @@ add_unit_label(Unit, Image, GraphOpt) ->
 	egd:text(Image, P, Font, Unit, Color),
 	Image.
 
-% -spec add_parameter_X([{atom(), [number()]}],[{atom(),[{number(),number()}]}]) -> [{number(),number()}]}].
+%%------------------------------------------------------------------------------
+%% @doc It transform a list of values to list of {n,values}, where n is a 
+%% 		non-negative integer.
+%% @end
+%%------------------------------------------------------------------------------
+-spec add_parameter_X([{atom(), [number()]}],[{atom(),[{number(),number()}]}]) -> 
+		[{atom(),[{number(),number()}]}].
 add_parameter_X([],NewList) ->
 	NewList;
 add_parameter_X([{Label,List} | Rest], ListWithX) ->
@@ -300,7 +364,7 @@ add_parameter_X([{Label,List} | Rest], ListWithX) ->
 		[] -> [0,0];
 		[One] -> [0,One];
 		More -> More
-	end,
+			end,
 	DataWithX = lists:zip(lists:seq(0,length(MinList)-1),MinList),
 	NewListWithX = ListWithX ++ [{Label, DataWithX}],
 	add_parameter_X(Rest,NewListWithX).
