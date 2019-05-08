@@ -1,6 +1,13 @@
+%%------------------------------------------------------------------------------
+%% @doc wgraph modul
+%% @end
+%%------------------------------------------------------------------------------
 -module(wgraph). 
 -export([wombat_graph/3, graph/5]).
 
+%%------------------------------------------------------------------------------
+%% Types
+%%------------------------------------------------------------------------------
 -record(wgraph_opts, {width,height,numberOfLine,marginwidth,marginheight,maxValue}).
 -type egd_image() :: pid().
 -type point() :: {non_neg_integer(), non_neg_integer()}.
