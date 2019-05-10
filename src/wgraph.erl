@@ -175,7 +175,7 @@ create_line([P0,P1 | Points], Image, Color) ->
 	create_line([P1 | Points], Image, Color).
 
 %%------------------------------------------------------------------------------
-%% @doc It doesn't work with more than 3 labels.
+%% @doc It doesn't work with more than 6 labels. 
 %% @end
 %%------------------------------------------------------------------------------
 -spec create_graph_label([char()],pid(),egd_color(),#wgraph_opts{}) -> egd_image().
@@ -186,8 +186,11 @@ create_graph_label(Name,Image,Color,GraphOpt) ->
 	MH = GraphOpt#wgraph_opts.marginheight,
 	W = GraphOpt#wgraph_opts.width,
 	N = GraphOpt#wgraph_opts.numberOfLine,
-	Y = H - trunc(MH / 2),
-	X = (trunc(W / 4) * N) - 100, % mod
+	X = (trunc(W / 4) * (((N - 1) rem 3) + 1)) - 100, 
+	Y = case N < 4 of 
+	 		true -> H - trunc(MH / 2);
+	 		_ -> H - trunc(MH / 2) + 20
+	 	end,
 	P = {X,Y},
 	P0 = {X-5,Y+12},
 	P1 = {X-10,Y+17},
