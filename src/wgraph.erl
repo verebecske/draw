@@ -3,29 +3,29 @@
 %% @end
 %%------------------------------------------------------------------------------
 -module(wgraph).
+
 -export([graph/5, wgraph/4]).
 
 %%------------------------------------------------------------------------------
 %% Types
 %%------------------------------------------------------------------------------
 -record(wgraph_opts,
-	{width, height, actual_line_number, margin_width, margin_height,
-	 max_y, main_label}).
+	{width, height, actual_line_number, margin_width,
+	 margin_height, max_y, main_label}).
 
 -type egd_image() :: pid().
 
 -type point() :: {non_neg_integer(), non_neg_integer()}.
 
--type egd_color() :: {float(), float(), float(),
-		      float()}.
+-type egd_color() :: {float(), float(), float(), float()}.
 
 %%------------------------------------------------------------------------------
 %% @doc Transform data from wombat, add coord X and default values.
-%%              Returns image as binary.
+%%      Returns image as binary.
 %% @end
 %%------------------------------------------------------------------------------
 -spec wgraph([{atom(), [number()]}], [string()],
-		   string(), #wgraph_opts{}) -> binary().
+	     string(), #wgraph_opts{}) -> binary().
 
 wgraph(Data, Labels, Unit, OptsMap) ->
     NewData = add_parameter_x(Data, []),
@@ -33,7 +33,7 @@ wgraph(Data, Labels, Unit, OptsMap) ->
 
 %%------------------------------------------------------------------------------
 %% @doc Transforms the data, draws the image and saves it.
-%%              It's important that values must be non-negative!
+%%      It's important that values must be non-negative!
 %% 		Data format: [{metric_label,[{X1,Y1},{X2,Y2},{X3,Y3}, ... ]}, ... ]
 %% @end
 %%------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ create_options_record(OptsMap) ->
 
 %%------------------------------------------------------------------------------
 %% @doc It creates the basic white image with the time and value axis,
-%%              and adds the label. See doc/just_create.png
+%%      and adds the label. See doc/just_create.png
 %% @end
 %%------------------------------------------------------------------------------
 -spec create(#wgraph_opts{}) -> egd_image().
@@ -93,52 +93,43 @@ create(GraphOpt) ->
 %% @doc Transform values to X and Y coordinates.
 %% @end
 %%------------------------------------------------------------------------------
--spec change_position([{atom(),
-			[{number(), number()}]}],
-		      #wgraph_opts{}) -> {[{atom(), [{number(), number()}]}],
-					  #wgraph_opts{}}.
+-spec change_position([{atom(), [{number(), number()}]}], #wgraph_opts{}) -> 
+		{[{atom(), [{number(), number()}]}], #wgraph_opts{}}.
 
 change_position(Data, GraphOpt) ->
     MarginWidth = GraphOpt#wgraph_opts.margin_width,
     MarginHeight = GraphOpt#wgraph_opts.margin_height,
-    LineWidth = GraphOpt#wgraph_opts.width -
-		  2 * MarginWidth,
-    LineHeight = GraphOpt#wgraph_opts.height -
-		   2 * MarginHeight,
+    LineWidth = GraphOpt#wgraph_opts.width - 2 * MarginWidth,
+    LineHeight = GraphOpt#wgraph_opts.height - 2 * MarginHeight,
     {MaxW, MaxH} = find_maxs(Data),
     MinW = 0,
     MinH = 0,
-    Len = round(math:pow(10,
-			 length(integer_to_list(floor(MaxH))) - 1)),
+    Len = round(math:pow(10, length(integer_to_list(floor(MaxH))) - 1)),
     EstimatedHeight = (floor(MaxH / Len) + 1) * Len,
     SW = scale_factor(LineWidth, MinW, MaxW),
     SH = scale_factor(LineHeight, MinH, EstimatedHeight),
-	GridLines = calculate_grid_positions(Len,EstimatedHeight,MaxW),
+    GridLines = calculate_grid_positions(Len, EstimatedHeight, MaxW),
     NewData = lists:map(fun ({Name, Points}) ->
 				{Name,
 				 lists:map(fun ({W, H}) ->
 						   NewW = W * SW + MarginWidth,
-						   NewH = mirroring(H * SH,
-								    LineHeight)
-							    + MarginHeight,
+						   NewH = mirroring(H * SH, LineHeight) + MarginHeight,
 						   {trunc(NewW), trunc(NewH)}
 					   end,
 					   Points)}
 			end,
 			GridLines ++ Data),
-    {NewData, GraphOpt#wgraph_opts{max_y = EstimatedHeight}}.
+    {NewData,
+     GraphOpt#wgraph_opts{max_y = EstimatedHeight}}.
 
-calculate_grid_positions(Len,EstimatedHeight,MaxW) ->
-	MinW = 0,
+calculate_grid_positions(Len, EstimatedHeight, MaxW) ->
+    MinW = 0,
     Grids = lists:zipwith(fun (A, B) -> [A, B] end,
-			  grid_list(Len, EstimatedHeight
-		, MinW),
-			  grid_list(Len, EstimatedHeight
-		, MaxW)),
+			  grid_list(Len, EstimatedHeight, MinW),
+			  grid_list(Len, EstimatedHeight, MaxW)),
     [{grid, lists:flatten(Grids)}].
 
--spec scale_factor(number(), number(),
-		number()) -> number().
+-spec scale_factor(number(), number(), number()) -> number().
 
 scale_factor(LineLength, Min, Max) ->
     case Max - Min of
@@ -148,7 +139,7 @@ scale_factor(LineLength, Min, Max) ->
 
 %%------------------------------------------------------------------------------
 %% @doc Mirrors the Y axis, because egd(0,0) doesn't equal wgraph's data (0,0)
-%%              See in doc/just_create.png
+%%      See in doc/just_create.png
 %% @end
 %%------------------------------------------------------------------------------
 -spec mirroring(number(), number()) -> number().
@@ -164,8 +155,7 @@ mirroring(Y, AY) ->
 %% @doc Find the maximum values in Data.
 %% @end
 %%------------------------------------------------------------------------------
--spec find_maxs([{atom(),
-		  [{number(), number()}]}]) -> {number(), number()}.
+-spec find_maxs([{atom(), [{number(), number()}]}]) -> {number(), number()}.
 
 find_maxs(Data) ->
     lists:foldl(fun ({_, Points}, {MW, MH}) ->
@@ -180,8 +170,7 @@ find_maxs(Data) ->
 %% @doc It generates the X and Y coordinates for the girds.
 %% @end
 %%------------------------------------------------------------------------------
--spec grid_list(number(), number(),
-		number()) -> [{number(), number()}].
+-spec grid_list(number(), number(), number()) -> [{number(), number()}].
 
 grid_list(Len, EstimatedHeight, XValue) ->
     Ys = lists:seq(0, EstimatedHeight, Len),
@@ -192,8 +181,8 @@ grid_list(Len, EstimatedHeight, XValue) ->
 %% @doc  Add graphs' lines and legend.
 %% @end
 %%------------------------------------------------------------------------------
--spec add_lines([{atom(), [point()]}], egd_image(),
-		#wgraph_opts{}) -> egd_image().
+-spec add_lines([{atom(), [point()]}], egd_image(), #wgraph_opts{}) -> 
+		egd_image().
 
 add_lines([{Name, Points}], Image, GraphOpt) ->
     {Color, NewGraphOpt} = color(GraphOpt),
@@ -206,8 +195,7 @@ add_lines([{Name, Points} | Data], Image, GraphOpt) ->
     create_line(Points, Image, Color),
     add_lines(Data, Image, NewGraphOpt).
 
--spec create_line([point()], egd_image(),
-		  egd_color()) -> egd_image().
+-spec create_line([point()], egd_image(), egd_color()) -> egd_image().
 
 create_line([_], Image, _) -> Image;
 create_line([P0, P1 | Points], Image, Color) ->
@@ -218,8 +206,8 @@ create_line([P0, P1 | Points], Image, Color) ->
 %% @doc It doesn't work with more than 6 labels.
 %% @end
 %%------------------------------------------------------------------------------
--spec create_graph_label([char()], pid(), egd_color(),
-			 #wgraph_opts{}) -> egd_image().
+-spec create_graph_label([char()], pid(), egd_color(), #wgraph_opts{}) -> 
+		egd_image().
 
 create_graph_label(Name, Image, Color, GraphOpt) ->
     Font = load_font("Terminus22.wingsfont"),
@@ -244,8 +232,7 @@ create_graph_label(Name, Image, Color, GraphOpt) ->
 %% @doc Create main label. See the point P in doc/points.png.
 %% @end
 %%------------------------------------------------------------------------------
--spec create_main_label(egd_image(),
-			  #wgraph_opts{}) -> egd_image().
+-spec create_main_label(egd_image(), #wgraph_opts{}) -> egd_image().
 
 create_main_label(Image, GraphOpt) ->
     P = {GraphOpt#wgraph_opts.width - 100, 15},
@@ -269,11 +256,10 @@ save(Image, Filename) ->
 
 %%------------------------------------------------------------------------------
 %% @doc It chooses the color of the lines, it guarantees that all the lines
-%%              (if you use just 4) have different color.
+%%      (if you use just 4) have different color.
 %% @end
 %%------------------------------------------------------------------------------
--spec color(#wgraph_opts{}) -> {egd_color(),
-				#wgraph_opts{}}.
+-spec color(#wgraph_opts{}) -> {egd_color(), #wgraph_opts{}}.
 
 color(GraphOpt) ->
     Number = GraphOpt#wgraph_opts.actual_line_number,
@@ -283,8 +269,7 @@ color(GraphOpt) ->
 	      2 -> {44, 160, 44};
 	      _ -> green
 	    end,
-    {egd:color(Color),
-     GraphOpt#wgraph_opts{actual_line_number = Number + 1}}.
+    {egd:color(Color), GraphOpt#wgraph_opts{actual_line_number = Number + 1}}.
 
 load_font(Font) ->
     case
@@ -302,7 +287,7 @@ load_font(Font) ->
 
 %%------------------------------------------------------------------------------
 %% @doc Create the labels under the X axis. It uses the x coordinates from
-%%              the longest datalist. You can see in doc/points.png
+%%      the longest datalist. You can see in doc/points.png
 %% @end
 %%------------------------------------------------------------------------------
 create_x_labels(Data, Date, Image, GraphOpt) ->
@@ -315,7 +300,7 @@ create_x_labels(Data, Date, Image, GraphOpt) ->
 				    {X - 15,
 				     GraphOpt#wgraph_opts.height -
 				       GraphOpt#wgraph_opts.margin_height}
-			    end,
+			    			end,
 			    Points),
     Color = egd:color(silver),
     Font = load_font("Helvetica20.wingsfont"),
@@ -332,8 +317,8 @@ add_x_label([P | LabelPoints], [StringName | Strings],
 %% @doc Create the grid lines.
 %% @end
 %%------------------------------------------------------------------------------
--spec grid_lines(egd_image(), [{number(), number()}],
-		 #wgraph_opts{}) -> egd_image().
+-spec grid_lines(egd_image(), [{number(), number()}], #wgraph_opts{}) -> 
+		egd_image().
 
 grid_lines(Image, GridLines, GraphOpt) ->
     MaxY = GraphOpt#wgraph_opts.max_y,
@@ -354,7 +339,7 @@ grid_lines(Image, GridLines, GraphOpt) ->
 
 %%------------------------------------------------------------------------------
 %% @doc  I use the Label length because the PT is at the begining of the text.
-%%               Just like the create_main_label/2, see in doc/points.png
+%%       Just like the create_main_label/2, see in doc/points.png
 %% @end
 %%------------------------------------------------------------------------------
 add_grid_lines(_, Image, _, [], _) -> Image;
@@ -371,8 +356,7 @@ add_grid_lines([{X, Y} = P0, P1 | GridPoints], Image,
 %% @doc Add unit label. See doc/basic.png
 %% @end
 %%------------------------------------------------------------------------------
--spec add_unit_label([char()], egd_image(),
-		     #wgraph_opts{}) -> egd_image().
+-spec add_unit_label([char()], egd_image(), #wgraph_opts{}) -> egd_image().
 
 add_unit_label(Unit, Image, GraphOpt) ->
     MW = GraphOpt#wgraph_opts.margin_width,
@@ -390,8 +374,7 @@ add_unit_label(Unit, Image, GraphOpt) ->
 %%------------------------------------------------------------------------------
 -spec add_parameter_x([{atom(), [number()]}],
 		      [{atom(), [{number(), number()}]}]) -> [{atom(),
-							       [{number(),
-								 number()}]}].
+							       [{number(), number()}]}].
 
 add_parameter_x([], NewList) -> NewList;
 add_parameter_x([{Label, List} | Rest], ListWithX) ->
@@ -400,7 +383,6 @@ add_parameter_x([{Label, List} | Rest], ListWithX) ->
 		[One] -> [0, One];
 		More -> More
 	      end,
-    DataWithX = lists:zip(lists:seq(0, length(MinList) - 1),
-			  MinList),
+    DataWithX = lists:zip(lists:seq(0, length(MinList) - 1), MinList),
     NewListWithX = ListWithX ++ [{Label, DataWithX}],
     add_parameter_x(Rest, NewListWithX).
