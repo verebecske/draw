@@ -3,7 +3,6 @@
 %% @end
 %%------------------------------------------------------------------------------
 -module(wgraph).
-
 -export([graph/5, wgraph/4]).
 
 %%------------------------------------------------------------------------------
@@ -14,14 +13,13 @@
 	 margin_height, max_y, main_label}).
 
 -type egd_image() :: pid().
-
 -type point() :: {non_neg_integer(), non_neg_integer()}.
-
 -type egd_color() :: {float(), float(), float(), float()}.
 
 %%------------------------------------------------------------------------------
-%% @doc Transform data from wombat, add coord X and default values.
+%% @doc Transform data from wombat, add coord X and default filename.
 %%      Returns image as binary.
+%%      Data format: [{metric_label,[Y1,Y2,Y3, ... ]}, ... ]
 %% @end
 %%------------------------------------------------------------------------------
 -spec wgraph([{atom(), [number()]}], [string()],
@@ -34,11 +32,11 @@ wgraph(Data, Labels, Unit, OptsMap) ->
 %%------------------------------------------------------------------------------
 %% @doc Transforms the data, draws the image and saves it.
 %%      It's important that values must be non-negative!
+%%      Don't use empty list.
 %% 		Data format: [{metric_label,[{X1,Y1},{X2,Y2},{X3,Y3}, ... ]}, ... ]
 %% @end
 %%------------------------------------------------------------------------------
--spec graph([{atom(), {number(), number()}}],
-	    [string()], string(), string(),
+-spec graph([{atom(), {number(), number()}}], [string()], string(), string(),
 	    #wgraph_opts{}) -> binary().
 
 graph(Data, Labels, Unit, Filename, OptsMap) ->
@@ -56,8 +54,7 @@ graph(Data, Labels, Unit, Filename, OptsMap) ->
 %% @doc Create an options record with default values.
 %% @end
 %%------------------------------------------------------------------------------
--spec
-     create_options_record(#wgraph_opts{}) -> #wgraph_opts{}.
+-spec create_options_record(#wgraph_opts{}) -> #wgraph_opts{}.
 
 create_options_record(OptsMap) ->
     #wgraph_opts{actual_line_number = 0,
@@ -69,7 +66,7 @@ create_options_record(OptsMap) ->
 
 %%------------------------------------------------------------------------------
 %% @doc It creates the basic white image with the time and value axis,
-%%      and adds the label. See doc/just_create.png
+%%      and adds the main label. See doc/just_create.png
 %% @end
 %%------------------------------------------------------------------------------
 -spec create(#wgraph_opts{}) -> egd_image().

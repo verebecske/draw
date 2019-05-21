@@ -7,7 +7,7 @@ This can draw colorful lines. Thanks for egd and eplot.
     <img alt="ThreeLine" title="threeline.png" src="doc/three_line.png" width="600"/></p>
 
 <p> Just one line: <br>
-    <img alt="OneLine" title="oneline.png" src="doc/basic_line.png" width="600"/></p>
+    <img alt="OneLine" title="oneline.png" src="doc/one_line.png" width="600"/></p>
   
 <p> Basic image: <br>
     <img alt="Basic" title="basic.png" src="doc/basic.png" width="600"/></p>
